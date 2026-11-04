@@ -140,10 +140,14 @@ func _run_smoke_test() -> void:
 		push_error("Smoke test: authored food and drink models did not load")
 		quit(1)
 		return
+	if store.interior_root == null or store.interior_root.visible:
+		push_error("Smoke test: store interior should be hidden while outside")
+		quit(1)
+		return
 	store.configure(game.player)
 	game_state.add_reward(50, 0)
 	game.player.global_position = store.get_door_position()
-	if not store.try_interact() or not store.inside_store:
+	if not store.try_interact() or not store.inside_store or not store.interior_root.visible:
 		push_error("Smoke test: player could not enter the minimarket")
 		quit(1)
 		return
@@ -158,7 +162,7 @@ func _run_smoke_test() -> void:
 		quit(1)
 		return
 	game.player.global_position = store.door_inside_position
-	if not store.try_interact() or store.inside_store:
+	if not store.try_interact() or store.inside_store or store.interior_root.visible:
 		push_error("Smoke test: player could not exit the minimarket")
 		quit(1)
 		return
