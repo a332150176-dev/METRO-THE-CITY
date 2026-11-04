@@ -12,6 +12,7 @@ var cars: Array[TrafficCar] = []
 var pedestrians: Array[CityPedestrian] = []
 var police_units: Array[TrafficCar] = []
 var wanted_level: int = 0
+var humanoid_factory: HumanoidFactory
 var spawn_clock: float = 0.0
 var simulation_clock: float = 0.0
 var player_tracker: Node3D
@@ -28,9 +29,10 @@ var pedestrian_colors: Array[Color] = [
 	Color("#9b8756"), Color("#55566d"), Color("#8a8f94")
 ]
 
-func configure(road_network: RoadNetwork, controller: TrafficController) -> void:
+func configure(road_network: RoadNetwork, controller: TrafficController, character_factory: HumanoidFactory = null) -> void:
 	network = road_network
 	lights = controller
+	humanoid_factory = character_factory
 	rng.seed = 884422
 	_load_vehicle_models()
 	for i in range(target_car_count):
@@ -176,7 +178,7 @@ func _spawn_pedestrians(count: int) -> void:
 	for i in range(count):
 		var pedestrian: CityPedestrian = PEDESTRIAN_SCRIPT.new()
 		pedestrian.name = "Pedestrian_%02d" % i
-		pedestrian.setup(_make_sidewalk_route(i), pedestrian_colors[i % pedestrian_colors.size()])
+		pedestrian.setup(_make_sidewalk_route(i), pedestrian_colors[i % pedestrian_colors.size()], humanoid_factory)
 		add_child(pedestrian)
 		pedestrians.append(pedestrian)
 
