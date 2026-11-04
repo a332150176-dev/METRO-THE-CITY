@@ -174,6 +174,25 @@ func _build_vehicle() -> void:
 	visual.name = "VehicleVisual"
 	add_child(visual)
 
+	var authored_scene: PackedScene = null
+	if traffic_manager != null:
+		authored_scene = traffic_manager.get_vehicle_scene(vehicle_type)
+	if authored_scene != null:
+		var authored_model := authored_scene.instantiate() as Node3D
+		if authored_model != null:
+			authored_model.name = "AuthoredVehicleModel"
+			var scale_y := 1.45
+			var scale_z := 1.55
+			if vehicle_type == "van" or vehicle_type == "delivery" or vehicle_type == "ambulance" or vehicle_type == "firetruck":
+				scale_y = 1.28
+				scale_z = 1.35
+			authored_model.scale = Vector3(1.2, scale_y, scale_z)
+			# The source vehicles face +Z; METRO driving uses -Z as forward.
+			authored_model.rotation.y = PI
+			visual.add_child(authored_model)
+			_collect_authored_wheels(authored_model)
+			return
+
 	var body_material := _paint(paint_color, 0.42, 0.22)
 	body_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	var glass_material := _paint(Color("#152b38"), 0.2, 0.28)
@@ -266,6 +285,12 @@ func _build_vehicle() -> void:
 		_add_box(visual, Vector3(0.42, 0.035, 0.23), Vector3(0.0, roof_y + 0.24, 0.0), Color("#fff1a5"), 0.3, 0.0)
 	if vehicle_type == "van":
 		_add_box(visual, Vector3(0.05, 0.52, 0.04), Vector3(0.0, 1.39, 1.62), paint_color.darkened(0.13), 0.6, 0.0)
+
+func _collect_authored_wheels(node: Node) -> void:
+	if node is MeshInstance3D and str(node.name).begins_with("wheel"):
+		wheel_meshes.append(node as MeshInstance3D)
+	for child in node.get_children():
+		_collect_authored_wheels(child)
 
 func enter_vehicle(player: PlayerController, joystick: TouchJoystick) -> void:
 	if player_driving or player == null:
