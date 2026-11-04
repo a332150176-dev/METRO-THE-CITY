@@ -37,10 +37,23 @@ func _run_smoke_test() -> void:
 		quit(1)
 		return
 
+	GameState.set_shirt_color(Color("#b64d3b"))
+	if GameState.custom_shirt_color != "#b64d3b":
+		push_error("Smoke test: character customization did not persist")
+		quit(1)
+		return
+	GameState.clear_shirt_color()
+
 	game.hud._start_selected_character()
 	await process_frame
 	if game.player == null or game.mission_manager == null:
 		push_error("Smoke test: character selection did not start the campaign")
+		quit(1)
+		return
+
+	game.player.request_jump()
+	if not game.player.jump_requested:
+		push_error("Smoke test: jump action was not registered")
 		quit(1)
 		return
 
@@ -50,11 +63,18 @@ func _run_smoke_test() -> void:
 		push_error("Smoke test: player could not enter a vehicle")
 		quit(1)
 		return
+	game.mission_manager.vehicle = test_car
+	test_car.global_position = Vector3(0.0, 0.0, 0.0)
+	await process_frame
+	if game.mission_manager.current_index < 1:
+		push_error("Smoke test: mission did not complete while driving")
+		quit(1)
+		return
 	test_car.exit_vehicle()
 	if test_car.player_driving or not game.player.visible:
 		push_error("Smoke test: player could not exit the vehicle")
 		quit(1)
 		return
 
-	print("METRO smoke test passed: city, routes, AI population, player, campaign and vehicle entry/exit")
+	print("METRO smoke test passed: city, routes, AI, campaign, customization, jump, vehicle driving and mission completion")
 	quit(0)

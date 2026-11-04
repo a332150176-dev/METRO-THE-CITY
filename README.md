@@ -9,9 +9,9 @@ Open the repository root in Godot 4.3 or newer by opening `project.godot`.
 The current reconstructed gameplay baseline includes:
 - A procedural Tel Aviv-inspired 3D city with a 3×3 intersection grid, roads, sidewalks, buildings, crosswalks, street furniture and traffic lights.
 - Destination-based routing between intersections, including curved paths for turns.
-- AI traffic that obeys traffic-light phases, follows other vehicles and attempts lane changes/overtakes when the adjacent lane is clear.
+- AI traffic that obeys green/yellow/red traffic-light phases, follows other vehicles and attempts lane changes/overtakes when the adjacent lane is clear.
 - Pedestrians moving along sidewalk routes.
-- Third-person player movement, three selectable character profiles and on-screen Android touch controls.
+- Third-person player movement, three selectable character profiles, persistent shirt-color customization, jump, and on-screen Android touch controls.
 - Enterable vehicles with a third-person driving camera, forward/reverse controls, steering and an exit action.
 - A starter campaign with objectives, rewards, money and reputation, with local save data between launches.
 
