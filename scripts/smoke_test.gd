@@ -84,6 +84,23 @@ func _run_smoke_test() -> void:
 		quit(1)
 		return
 
+	var wanted := game.get_node_or_null("WantedSystem") as WantedSystem
+	if wanted == null:
+		push_error("Smoke test: wanted system was not initialized")
+		quit(1)
+		return
+	wanted.report_vehicle_theft()
+	await process_frame
+	if wanted.wanted_level != 1 or traffic.police_units.size() != 1:
+		push_error("Smoke test: vehicle theft did not dispatch a police unit")
+		quit(1)
+		return
+	var police_car := traffic.police_units[0]
+	if police_car.pursuit_target != game.player or police_car.vehicle_type != "police":
+		push_error("Smoke test: police unit did not start pursuing the player")
+		quit(1)
+		return
+
 	game.player.request_jump()
 	if not game.player.jump_requested:
 		push_error("Smoke test: jump action was not registered")
@@ -146,5 +163,5 @@ func _run_smoke_test() -> void:
 		quit(1)
 		return
 
-	print("METRO smoke test passed: 7x7 city, eight textured suburban buildings, five textured skyscrapers, eight authored vehicles, traffic, campaign, vehicles, interactive store with 3D products, checkout and persistent inventory")
+	print("METRO smoke test passed: 7x7 city, eight textured suburban buildings, five textured skyscrapers, eight authored vehicles, police wanted response, traffic, campaign, vehicles, interactive store with 3D products, checkout and persistent inventory")
 	quit(0)
