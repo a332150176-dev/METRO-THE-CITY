@@ -39,6 +39,16 @@ func _build_person() -> void:
 	body.material_override = body_material
 	add_child(body)
 
+	var legs := MeshInstance3D.new()
+	var legs_mesh := BoxMesh.new()
+	legs_mesh.size = Vector3(0.34, 0.66, 0.22)
+	legs.mesh = legs_mesh
+	legs.position.y = 0.32
+	var legs_material := StandardMaterial3D.new()
+	legs_material.albedo_color = Color("#30343b")
+	legs.material_override = legs_material
+	add_child(legs)
+
 	var head := MeshInstance3D.new()
 	var head_mesh := SphereMesh.new()
 	head_mesh.radius = 0.15

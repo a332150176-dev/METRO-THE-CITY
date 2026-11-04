@@ -37,5 +37,24 @@ func _run_smoke_test() -> void:
 		quit(1)
 		return
 
-	print("METRO smoke test passed: scene, city, 3x3 route, traffic and pedestrians")
+	game.hud._start_selected_character()
+	await process_frame
+	if game.player == null or game.mission_manager == null:
+		push_error("Smoke test: character selection did not start the campaign")
+		quit(1)
+		return
+
+	var test_car: TrafficCar = traffic.cars[0]
+	test_car.enter_vehicle(game.player, game.hud.get_joystick())
+	if not test_car.player_driving:
+		push_error("Smoke test: player could not enter a vehicle")
+		quit(1)
+		return
+	test_car.exit_vehicle()
+	if test_car.player_driving or not game.player.visible:
+		push_error("Smoke test: player could not exit the vehicle")
+		quit(1)
+		return
+
+	print("METRO smoke test passed: city, routes, AI population, player, campaign and vehicle entry/exit")
 	quit(0)

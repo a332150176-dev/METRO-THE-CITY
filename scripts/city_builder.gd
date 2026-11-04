@@ -50,8 +50,8 @@ func _box(parent: Node3D, size: Vector3, position: Vector3, color: Color, solid:
 	return holder
 
 func _build_ground() -> void:
-	_box(self, Vector3(260.0, 1.0, 260.0), Vector3(0.0, -0.62, 0.0), Color("#777d78"), true)
-	_box(self, Vector3(220.0, 0.05, 220.0), Vector3(0.0, -0.08, 0.0), Color("#8b8b7b"))
+	_box(self, Vector3(260.0, 1.0, 260.0), Vector3(0.0, -0.5, 0.0), Color("#777d78"), true)
+	_box(self, Vector3(220.0, 0.05, 220.0), Vector3(0.0, 0.02, 0.0), Color("#8b8b7b"))
 
 func _build_roads() -> void:
 	for grid in range(3):

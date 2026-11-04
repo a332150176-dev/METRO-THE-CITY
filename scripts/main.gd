@@ -10,7 +10,9 @@ const MISSION_SCRIPT := preload("res://scripts/mission_manager.gd")
 
 var road_network: RoadNetwork
 var traffic_controller: TrafficController
+var traffic_manager: TrafficManager
 var player: PlayerController
+var active_vehicle: TrafficCar
 var hud: GameHUD
 var mission_manager: MissionManager
 
@@ -28,10 +30,10 @@ func _ready() -> void:
 	add_child(city)
 	city.build_city(traffic_controller)
 
-	var traffic: TrafficManager = TRAFFIC_SCRIPT.new()
-	traffic.name = "CityTraffic"
-	add_child(traffic)
-	traffic.configure(road_network, traffic_controller)
+	traffic_manager = TRAFFIC_SCRIPT.new()
+	traffic_manager.name = "CityTraffic"
+	add_child(traffic_manager)
+	traffic_manager.configure(road_network, traffic_controller)
 
 	hud = HUD_SCRIPT.new()
 	hud.name = "GameHUD"
@@ -39,6 +41,17 @@ func _ready() -> void:
 	hud.character_selected.connect(_start_game)
 	hud.show_character_selection()
 	GameState.money_changed.connect(hud.set_money)
+	GameState.reputation_changed.connect(hud.set_reputation)
+
+func _process(_delta: float) -> void:
+	if hud == null or player == null:
+		return
+	if active_vehicle != null and is_instance_valid(active_vehicle):
+		hud.set_action_label("יציאה מהרכב")
+	elif _nearest_vehicle() != null:
+		hud.set_action_label("כניסה לרכב")
+	else:
+		hud.set_action_label("פעולה")
 
 func _build_environment() -> void:
 	var environment_node := WorldEnvironment.new()
@@ -72,7 +85,7 @@ func _start_game(character_id: String) -> void:
 	player.name = "Player"
 	add_child(player)
 	player.configure(character_id)
-	player.global_position = Vector3(-65.0, 0.15, -65.0)
+	player.global_position = Vector3(-65.0, 0.05, -65.0)
 
 	hud.show_gameplay()
 	player.set_joystick_source(hud.get_joystick())
@@ -83,13 +96,39 @@ func _start_game(character_id: String) -> void:
 	mission_manager.name = "CampaignMissions"
 	add_child(mission_manager)
 	mission_manager.mission_updated.connect(hud.set_mission)
-	mission_manager.setup(player)
+	mission_manager.setup(player, GameState.mission_index)
 	GameState.campaign_started = true
+	GameState.save_progress()
+
+func _nearest_vehicle() -> TrafficCar:
+	if traffic_manager == null or player == null:
+		return null
+	var nearest: TrafficCar
+	var nearest_distance := 5.6
+	for car in traffic_manager.cars:
+		if not is_instance_valid(car) or car.is_queued_for_deletion() or car.player_driving:
+			continue
+		var distance := Vector2(player.global_position.x, player.global_position.z).distance_to(
+			Vector2(car.global_position.x, car.global_position.z)
+		)
+		if distance < nearest_distance:
+			nearest_distance = distance
+			nearest = car
+	return nearest
 
 func _on_interaction() -> void:
 	if player == null:
 		return
-	player.request_interaction()
+	if active_vehicle != null and is_instance_valid(active_vehicle):
+		active_vehicle.exit_vehicle()
+		active_vehicle = null
+		return
+	var nearby := _nearest_vehicle()
+	if nearby != null:
+		active_vehicle = nearby
+		active_vehicle.enter_vehicle(player, hud.get_joystick())
+	else:
+		player.request_interaction()
 
 func _ensure_input_actions() -> void:
 	_add_key_action("move_forward", KEY_W)

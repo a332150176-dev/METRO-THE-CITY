@@ -12,13 +12,14 @@ The current reconstructed gameplay baseline includes:
 - AI traffic that obeys traffic-light phases, follows other vehicles and attempts lane changes/overtakes when the adjacent lane is clear.
 - Pedestrians moving along sidewalk routes.
 - Third-person player movement, three selectable character profiles and on-screen Android touch controls.
-- A starter campaign with objectives, rewards, money and reputation.
+- Enterable vehicles with a third-person driving camera, forward/reverse controls, steering and an exit action.
+- A starter campaign with objectives, rewards, money and reputation, with local save data between launches.
 
 The scene uses procedural geometry and intentionally modest rendering settings as a first playable baseline for the M36 Plus target. The source here is a reconstruction from the established V10 design requirements; the original V10 archive is still being transferred and has not yet been verified as restored.
 
 ## Validation
 
-GitHub Actions runs a headless Godot import and a gameplay smoke test when the game source changes.
+GitHub Actions runs a headless Godot import and a gameplay smoke test when the game source changes. The smoke test checks city generation, road routing, AI population, campaign initialization and vehicle entry/exit.
 
 ## Original V10 archive
 

@@ -36,7 +36,8 @@ func _gui_input(event: InputEvent) -> void:
 func _update_from_position(position: Vector2) -> void:
 	var offset := position - size * 0.5
 	var radius := maxf(1.0, outer_radius)
-	_set_value(offset.limit_length(radius) / radius)
+	var axis := offset.limit_length(radius) / radius
+	_set_value(Vector2(axis.x, -axis.y))
 
 func _set_value(next_value: Vector2) -> void:
 	value = next_value
@@ -47,5 +48,5 @@ func _draw() -> void:
 	var center := size * 0.5
 	draw_circle(center, outer_radius, Color(0.04, 0.08, 0.13, 0.44))
 	draw_arc(center, outer_radius, 0.0, TAU, 48, Color(0.78, 0.88, 0.96, 0.55), 3.0, true)
-	draw_circle(center + value * outer_radius, knob_radius, Color(0.92, 0.96, 1.0, 0.86))
-	draw_arc(center + value * outer_radius, knob_radius, 0.0, TAU, 32, Color(0.12, 0.22, 0.34, 0.8), 2.0, true)
+	draw_circle(center + Vector2(value.x, -value.y) * outer_radius, knob_radius, Color(0.92, 0.96, 1.0, 0.86))
+	draw_arc(center + Vector2(value.x, -value.y) * outer_radius, knob_radius, 0.0, TAU, 32, Color(0.12, 0.22, 0.34, 0.8), 2.0, true)

@@ -14,8 +14,9 @@ var missions: Array[Dictionary] = [
 	{"title": "העיר מתעוררת", "description": "סיים את המסלול בצפון העיר", "target": Vector3(76.0, 0.0, -76.0), "reward": 320}
 ]
 
-func setup(player_node: PlayerController) -> void:
+func setup(player_node: PlayerController, starting_index: int = 0) -> void:
 	player = player_node
+	current_index = clampi(starting_index, 0, missions.size())
 	_build_marker()
 	_publish_current()
 

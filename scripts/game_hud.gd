@@ -10,10 +10,12 @@ var overlay: ColorRect
 var mission_label: Label
 var mission_detail: Label
 var money_label: Label
+var reputation_label: Label
 var selected_character: String = "noam"
 var sprint_button: Button
 
 func show_character_selection() -> void:
+	selected_character = GameState.selected_character
 	overlay = ColorRect.new()
 	overlay.color = Color(0.015, 0.035, 0.065, 0.94)
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -111,7 +113,7 @@ func show_gameplay() -> void:
 	sprint_button.toggled.connect(func(enabled: bool): sprint_toggled.emit(enabled))
 	root.add_child(sprint_button)
 
-	var action_button := Button.new()
+	action_button = Button.new()
 	action_button.text = "פעולה"
 	action_button.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	action_button.position = Vector2(-150.0, -205.0)

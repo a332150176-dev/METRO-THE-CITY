@@ -8,20 +8,26 @@ var lights: TrafficController
 var traffic_manager: TrafficManager
 var route: PackedVector3Array = PackedVector3Array()
 var route_index: int = 1
+var route_goal_id: int = 0
 var speed: float = 0.0
 var cruise_speed: float = 10.5
 var paint_color: Color = Color("#287c9b")
 var overtaking: bool = false
 var overtake_clock: float = 0.0
+var player_driving: bool = false
+var driver: PlayerController
+var driving_joystick: TouchJoystick
+var vehicle_camera: Camera3D
 
 func setup(network: RoadNetwork, controller: TrafficController, start_id: int, goal_id: int, color: Color, lane: float = 3.1, manager: TrafficManager = null) -> void:
 	route_network = network
 	lights = controller
 	traffic_manager = manager
+	route_goal_id = goal_id
 	paint_color = color
 	route = network.build_route(start_id, goal_id, lane)
 	if route.size() > 0:
-		global_position = route[0] + Vector3(0.0, 0.15, 0.0)
+		global_position = route[0]
 	_build_vehicle()
 
 func _ready() -> void:
@@ -71,12 +77,59 @@ func _add_box(parent: Node3D, dimensions: Vector3, offset: Vector3, color: Color
 	mesh_instance.material_override = material
 	parent.add_child(mesh_instance)
 
+func enter_vehicle(player: PlayerController, joystick: TouchJoystick) -> void:
+	if player_driving or player == null:
+		return
+	player_driving = true
+	driver = player
+	driving_joystick = joystick
+	driver.camera.current = false
+	driver.hide()
+	driver.set_physics_process(false)
+	driver.collision_layer = 0
+	driver.collision_mask = 0
+	driver.velocity = Vector3.ZERO
+	vehicle_camera = Camera3D.new()
+	vehicle_camera.name = "VehicleCamera"
+	vehicle_camera.position = Vector3(0.0, 3.3, 7.6)
+	vehicle_camera.rotation_degrees.x = -15.0
+	vehicle_camera.fov = 78.0
+	add_child(vehicle_camera)
+	vehicle_camera.current = true
+
+func exit_vehicle() -> void:
+	if not player_driving:
+		return
+	player_driving = false
+	if vehicle_camera != null:
+		vehicle_camera.current = false
+		vehicle_camera.queue_free()
+		vehicle_camera = null
+	if is_instance_valid(driver):
+		driver.show()
+		driver.set_physics_process(true)
+		driver.collision_layer = 1
+		driver.collision_mask = 1
+		driver.global_position = global_position + global_transform.basis.x * 2.4 + Vector3(0.0, 0.05, 0.0)
+		driver.velocity = Vector3.ZERO
+		driver.camera.current = true
+	driver = null
+	driving_joystick = null
+	overtaking = false
+	var nearest := route_network.nearest_intersection(global_position)
+	route = route_network.build_route(int(nearest["id"]), route_goal_id)
+	route_index = 1
+	speed = 0.0
+
 func _physics_process(delta: float) -> void:
+	if player_driving:
+		_drive_player(delta)
+		return
 	if route.size() < 2 or route_index >= route.size():
 		queue_free()
 		return
 
-	var target := route[route_index] + Vector3(0.0, 0.15, 0.0)
+	var target := route[route_index]
 	var to_target := target - global_position
 	to_target.y = 0.0
 	var distance := to_target.length()
@@ -118,4 +171,23 @@ func _physics_process(delta: float) -> void:
 	velocity.y = 0.0
 	if speed > 0.2:
 		rotation.y = lerp_angle(rotation.y, atan2(-direction.x, -direction.z), minf(1.0, delta * 4.0))
+	move_and_slide()
+
+func _drive_player(delta: float) -> void:
+	var input_vector := Input.get_vector("move_left", "move_right", "move_back", "move_forward")
+	if driving_joystick != null and driving_joystick.value.length() > 0.08:
+		input_vector = driving_joystick.value
+
+	if input_vector.y > 0.08:
+		speed = move_toward(speed, 15.0, 9.0 * delta)
+	elif input_vector.y < -0.08:
+		speed = move_toward(speed, -5.0, 12.0 * delta)
+	else:
+		speed = move_toward(speed, 0.0, 3.0 * delta)
+
+	if absf(speed) > 0.4:
+		rotation.y -= input_vector.x * delta * 1.25 * signf(speed)
+	var forward := -global_transform.basis.z
+	velocity = forward * speed
+	velocity.y = 0.0
 	move_and_slide()

@@ -63,17 +63,17 @@ func _make_sidewalk_route(seed_offset: int) -> PackedVector3Array:
 	var side := -1.0 if seed_offset % 2 == 0 else 1.0
 	var lane := road_line + side * 11.5
 	var start := rng.randf_range(-76.0, 76.0)
-	points.append(Vector3(start, 0.08, lane))
-	points.append(Vector3(76.0, 0.08, lane))
-	points.append(Vector3(76.0, 0.08, lane + side * 8.0))
-	points.append(Vector3(-76.0, 0.08, lane + side * 8.0))
-	points.append(Vector3(-76.0, 0.08, lane))
+	points.append(Vector3(start, 0.05, lane))
+	points.append(Vector3(76.0, 0.05, lane))
+	points.append(Vector3(76.0, 0.05, lane + side * 8.0))
+	points.append(Vector3(-76.0, 0.05, lane + side * 8.0))
+	points.append(Vector3(-76.0, 0.05, lane))
 	return points
 
 func lead_distance(source: TrafficCar, direction: Vector3) -> float:
 	var closest := INF
 	for other in cars:
-		if not is_instance_valid(other) or other == source or other.is_queued_for_deletion():
+		if not is_instance_valid(other) or other == source or other.is_queued_for_deletion() or other.player_driving:
 			continue
 		var relative := other.global_position - source.global_position
 		var ahead := relative.dot(direction)
