@@ -42,8 +42,16 @@ func _run_smoke_test() -> void:
 		push_error("Smoke test: five downtown skyscraper models did not load")
 		quit(1)
 		return
-	if city_node.get("high_detail_setpiece_count") < 3 or city_node.get("high_detail_tree_count") < 20:
-		push_error("Smoke test: high-detail city architecture and trees were not added")
+	if city_node.get("high_detail_setpiece_count") < 50 or city_node.get("high_detail_apartment_count") < 50:
+		push_error("Smoke test: detailed apartment facades are missing from the residential and mixed-use districts")
+		quit(1)
+		return
+	if city_node.get("street_lamp_count") < 70:
+		push_error("Smoke test: avenue street lighting was not generated")
+		quit(1)
+		return
+	if city_node.get("high_detail_tree_count") < 20:
+		push_error("Smoke test: high-detail city trees were not added")
 		quit(1)
 		return
 	if game.humanoid_factory == null or not game.humanoid_factory.assets_ready():
@@ -51,11 +59,20 @@ func _run_smoke_test() -> void:
 		quit(1)
 		return
 	var traffic := game.get_node_or_null("CityTraffic")
-	if traffic == null or traffic.cars.size() < 12 or traffic.pedestrians.size() < 24:
+	if traffic == null or traffic.cars.size() < 20 or traffic.pedestrians.size() < 40:
 		push_error("Smoke test: traffic or pedestrian population did not initialize")
 		quit(1)
 		return
 	var first_pedestrian := traffic.pedestrians[0] as CityPedestrian
+	var pedestrian_looks: Dictionary = {}
+	for pedestrian_index in range(mini(traffic.pedestrians.size(), 12)):
+		var pedestrian_model: Node3D = traffic.pedestrians[pedestrian_index].rigged_model
+		if pedestrian_model != null:
+			pedestrian_looks[str(pedestrian_model.get_meta("character_id", ""))] = true
+	if pedestrian_looks.size() < 3:
+		push_error("Smoke test: pedestrians do not have varied appearance palettes")
+		quit(1)
+		return
 	if first_pedestrian.rigged_model == null or first_pedestrian.rigged_animation == null:
 		push_error("Smoke test: pedestrians are not using rigged animated models")
 		quit(1)
