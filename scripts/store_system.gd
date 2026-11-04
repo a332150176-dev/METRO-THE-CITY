@@ -12,6 +12,7 @@ var player: PlayerController
 var inside_store: bool = false
 var selected_product_id: String = ""
 var roof: MeshInstance3D
+var interior_root: Node3D
 var left_door: MeshInstance3D
 var right_door: MeshInstance3D
 var products: Array[Dictionary] = []
@@ -148,21 +149,25 @@ func _build_store() -> void:
 	_set_doors_open(false)
 
 func _build_interior(trim_color: Color) -> void:
-	_add_visual_box(self, Vector3(13.8, 0.06, 13.8), SHOP_CENTER + Vector3(0.0, 0.19, 0.0), Color("#c9c2b4"))
+	interior_root = Node3D.new()
+	interior_root.name = "StoreInterior"
+	add_child(interior_root)
+	interior_root.visible = false
+	_add_visual_box(interior_root, Vector3(13.8, 0.06, 13.8), SHOP_CENTER + Vector3(0.0, 0.19, 0.0), Color("#c9c2b4"))
 	_add_visual_box(self, Vector3(13.5, 0.12, 0.16), SHOP_CENTER + Vector3(0.0, 0.38, 6.55), trim_color)
 	_add_visual_box(self, Vector3(0.16, 0.12, 13.2), SHOP_CENTER + Vector3(-6.55, 0.38, 0.0), trim_color)
 	_add_visual_box(self, Vector3(0.16, 0.12, 13.2), SHOP_CENTER + Vector3(6.55, 0.38, 0.0), trim_color)
 
-	_build_rack(SHOP_CENTER + Vector3(-5.1, 0.0, -2.0), Color("#8c7657"))
+	_build_rack(interior_root, SHOP_CENTER + Vector3(-5.1, 0.0, -2.0), Color("#8c7657"))
 	_build_rack(SHOP_CENTER + Vector3(5.1, 0.0, -2.0), Color("#8c7657"))
 	_build_rack(SHOP_CENTER + Vector3(-5.1, 0.0, 3.2), Color("#8c7657"))
 	_build_rack(SHOP_CENTER + Vector3(5.1, 0.0, 3.2), Color("#8c7657"))
 
 	# Stock is modeled as small, varied packages rather than empty display shelves.
 	for product in products:
-		_add_product_stock(product)
+		_add_product_stock(product, interior_root)
 
-	_add_static_box(self, Vector3(5.2, 1.05, 1.1), SHOP_CENTER + Vector3(0.0, 0.78, 5.4), Color("#6b5541"))
+	_add_static_box(interior_root, Vector3(5.2, 1.05, 1.1), SHOP_CENTER + Vector3(0.0, 0.78, 5.4), Color("#6b5541"))
 	_add_visual_box(self, Vector3(1.5, 0.18, 0.72), SHOP_CENTER + Vector3(0.0, 1.42, 5.35), Color("#2a3036"))
 	_add_visual_box(self, Vector3(0.48, 0.16, 0.4), SHOP_CENTER + Vector3(-0.55, 1.6, 5.32), Color("#7eb6b5"))
 	_add_visual_box(self, Vector3(0.34, 0.38, 0.28), SHOP_CENTER + Vector3(1.1, 1.75, 5.32), Color("#bdc5c6"))
@@ -178,15 +183,15 @@ func _build_interior(trim_color: Color) -> void:
 	_add_visual_box(self, Vector3(0.12, 3.2, 0.12), SHOP_CENTER + Vector3(6.4, 1.6, -6.0), Color("#d8c69e"))
 	_add_visual_box(self, Vector3(12.8, 0.16, 0.22), SHOP_CENTER + Vector3(0.0, 3.2, -6.0), Color("#d8c69e"))
 
-func _build_rack(center: Vector3, frame_color: Color) -> void:
+func _build_rack(parent: Node3D, center: Vector3, frame_color: Color) -> void:
 	for x_offset in [-0.52, 0.52]:
 		for z_offset in [-3.05, 3.05]:
-			_add_static_box(self, Vector3(0.1, 2.0, 0.1), center + Vector3(x_offset, 1.0, z_offset), frame_color)
+			_add_static_box(parent, Vector3(0.1, 2.0, 0.1), center + Vector3(x_offset, 1.0, z_offset), frame_color)
 	for shelf_height in [0.45, 1.05, 1.65]:
 		_add_static_box(self, Vector3(1.2, 0.12, 6.3), center + Vector3(0.0, shelf_height, 0.0), Color("#a58b68"))
-	_add_visual_box(self, Vector3(1.28, 0.08, 6.4), center + Vector3(0.0, 2.05, 0.0), Color("#4f5c5d"))
+	_add_visual_box(parent, Vector3(1.28, 0.08, 6.4), center + Vector3(0.0, 2.05, 0.0), Color("#4f5c5d"))
 
-func _add_product_stock(product: Dictionary) -> void:
+func _add_product_stock(product: Dictionary, parent: Node3D) -> void:
 	var center: Vector3 = product["position"]
 	var model_name := str(product.get("model", ""))
 	var packed_model := product_models.get(model_name) as PackedScene
@@ -203,9 +208,9 @@ func _add_product_stock(product: Dictionary) -> void:
 					stock_item.scale = Vector3.ONE * item_scale
 					stock_item.position = center + offset
 					stock_item.rotation.y = float((row + column) % 4) * PI * 0.5
-					add_child(stock_item)
+					parent.add_child(stock_item)
 					continue
-			var fallback := _add_visual_box(self, Vector3(0.15, 0.28, 0.19), center + offset, product["color"])
+			var fallback := _add_visual_box(parent, Vector3(0.15, 0.28, 0.19), center + offset, product["color"])
 
 func _load_product_models() -> void:
 	product_models.clear()
@@ -310,6 +315,7 @@ func _enter_store() -> void:
 	inside_store = true
 	selected_product_id = ""
 	roof.visible = false
+	interior_root.visible = true
 	_set_doors_open(true)
 	player.global_position = door_inside_position
 	player.velocity = Vector3.ZERO
@@ -321,6 +327,7 @@ func _exit_store() -> void:
 	inside_store = false
 	selected_product_id = ""
 	roof.visible = true
+	interior_root.visible = false
 	_set_doors_open(false)
 	player.global_position = door_outside_position
 	player.velocity = Vector3.ZERO
