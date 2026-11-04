@@ -100,6 +100,16 @@ func _run_smoke_test() -> void:
 		push_error("Smoke test: police unit did not start pursuing the player")
 		quit(1)
 		return
+	if police_car.get_node_or_null("VehicleVisual/PoliceLightbar/RedLamp") == null or police_car.get_node_or_null("VehicleVisual/PoliceLightbar/BlueLamp") == null:
+		push_error("Smoke test: active police unit is missing its emergency lightbar")
+		quit(1)
+		return
+	wanted.report_driving_collision(2)
+	await process_frame
+	if wanted.wanted_level != 3 or traffic.police_units.size() != 3:
+		push_error("Smoke test: pedestrian collision did not dispatch police backup")
+		quit(1)
+		return
 
 	game.player.request_jump()
 	if not game.player.jump_requested:
