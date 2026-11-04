@@ -20,7 +20,7 @@
 
 The first APK was deliberately a compatibility and gameplay test. It demonstrated that the Android export installs and runs on the M36 Plus. It is not the intended visual quality bar.
 
-The current project uses Godot 4.3 Compatibility renderer. The city road graph now uses a 9×9 intersection grid (81 intersections) with eight blocks in each direction (64 continuous blocks). The residential districts use eight authored CC0 building models, and downtown uses five separate textured skyscraper models. One commercial lot is reserved for an enterable minimarket with authored 3D food/drink stock, product selection, checkout and saved inventory. Eight authored CC0 vehicle models provide civilian, delivery and emergency traffic. Vehicle theft triggers a wanted level and dispatches up to three police pursuit cars. Distant cars and pedestrians are paused outside a 190 m player radius; interior visits pause city traffic and hide the minimap.
+The current project uses Godot 4.3 Compatibility renderer. The city road graph now uses a 9×9 intersection grid (81 intersections) with eight blocks in each direction (64 continuous blocks). The residential districts use eight authored CC0 building models, and downtown uses five separate textured skyscraper models. One commercial lot is reserved for an enterable minimarket with authored 3D food/drink stock, product selection, checkout and saved inventory. Eight authored CC0 vehicle models provide civilian, delivery and emergency traffic. Vehicle theft and driving collisions trigger wanted levels; up to three police pursuit cars are dispatched, remain active outside the normal simulation radius, and flash red/blue emergency lights during pursuit. Distant cars and pedestrians are paused outside a 190 m player radius; interior visits pause city traffic and hide the minimap.
 
 ## Performance rules
 
@@ -44,7 +44,7 @@ The current project uses Godot 4.3 Compatibility renderer. The city road graph n
 - Add selected enterable interiors and transitions. (Initial minimarket interior and purchase loop are implemented.)
 
 ### Phase 3 — Systems
-- Extend police response with pursuit escalation, escape and wanted-level systems. (Initial five-star wanted level, dispatch, road pursuit and distance-based decay are implemented.)
+- [x] Police response: five-star wanted level, theft/collision reports, backup dispatch, road-based pursuit, emergency lights and escape decay.
 - Improve character creator, clothing and appearance persistence.
 - Add activity progression, save/load and Hebrew interface polish.
 
