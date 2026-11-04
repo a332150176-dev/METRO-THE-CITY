@@ -21,15 +21,40 @@ var right_arm: Node3D
 var left_leg: Node3D
 var right_leg: Node3D
 var walk_phase: float = 0.0
+var humanoid_factory: HumanoidFactory
+var character_animation_player: AnimationPlayer
 
 func _ready() -> void:
 	_build_body()
 	_build_camera()
 
-func configure(id: String) -> void:
+func configure(id: String, factory: HumanoidFactory = null) -> void:
 	character_id = id
+	humanoid_factory = factory
 	if is_inside_tree():
-		_apply_character_appearance()
+		if not _install_rigged_model():
+			_apply_character_appearance()
+
+func _install_rigged_model() -> bool:
+	if humanoid_factory == null or not humanoid_factory.assets_ready():
+		return false
+	var authored_model := humanoid_factory.create_character(character_id)
+	if authored_model == null:
+		return false
+	if visual_root != null and is_instance_valid(visual_root):
+		remove_child(visual_root)
+		visual_root.queue_free()
+	visual_root = authored_model
+	visual_root.name = "CharacterVisual"
+	add_child(visual_root)
+	left_arm = null
+	right_arm = null
+	left_leg = null
+	right_leg = null
+	character_animation_player = visual_root.find_child("CharacterAnimationPlayer", true, false) as AnimationPlayer
+	if character_animation_player != null and character_animation_player.has_animation("Idle_A"):
+		character_animation_player.play("Idle_A")
+	return character_animation_player != null
 
 func set_joystick_source(source: TouchJoystick) -> void:
 	joystick = source
@@ -203,18 +228,27 @@ func _physics_process(delta: float) -> void:
 		var target_angle := atan2(-direction.x, -direction.z)
 		visual_root.rotation.y = lerp_angle(visual_root.rotation.y, target_angle, minf(1.0, delta * 9.0))
 		walk_phase += delta * (12.0 if sprinting else 8.5)
-		var stride := 0.62 if sprinting else 0.42
-		left_arm.rotation.x = sin(walk_phase) * stride
-		right_arm.rotation.x = -sin(walk_phase) * stride
-		left_leg.rotation.x = -sin(walk_phase) * stride
-		right_leg.rotation.x = sin(walk_phase) * stride
 		visual_root.position.y = absf(sin(walk_phase * 2.0)) * (0.035 if sprinting else 0.02)
+		if character_animation_player != null:
+			var movement_animation := "Running_A" if sprinting else "Walking_A"
+			if character_animation_player.has_animation(movement_animation) and character_animation_player.current_animation != movement_animation:
+				character_animation_player.play(movement_animation, 0.18)
+		elif left_arm != null and is_instance_valid(left_arm):
+			var stride := 0.62 if sprinting else 0.42
+			left_arm.rotation.x = sin(walk_phase) * stride
+			right_arm.rotation.x = -sin(walk_phase) * stride
+			left_leg.rotation.x = -sin(walk_phase) * stride
+			right_leg.rotation.x = sin(walk_phase) * stride
 	else:
-		left_arm.rotation.x = move_toward(left_arm.rotation.x, 0.0, delta * 3.0)
-		right_arm.rotation.x = move_toward(right_arm.rotation.x, 0.0, delta * 3.0)
-		left_leg.rotation.x = move_toward(left_leg.rotation.x, 0.0, delta * 3.0)
-		right_leg.rotation.x = move_toward(right_leg.rotation.x, 0.0, delta * 3.0)
 		visual_root.position.y = move_toward(visual_root.position.y, 0.0, delta * 0.2)
+		if character_animation_player != null:
+			if character_animation_player.has_animation("Idle_A") and character_animation_player.current_animation != "Idle_A":
+				character_animation_player.play("Idle_A", 0.2)
+		elif left_arm != null and is_instance_valid(left_arm):
+			left_arm.rotation.x = move_toward(left_arm.rotation.x, 0.0, delta * 3.0)
+			right_arm.rotation.x = move_toward(right_arm.rotation.x, 0.0, delta * 3.0)
+			left_leg.rotation.x = move_toward(left_leg.rotation.x, 0.0, delta * 3.0)
+			right_leg.rotation.x = move_toward(right_leg.rotation.x, 0.0, delta * 3.0)
 
 	move_and_slide()
 
