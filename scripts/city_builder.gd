@@ -79,7 +79,7 @@ func _apply_box_material(holder: Node3D, material: Material) -> void:
 			(child as MeshInstance3D).material_override = material
 			return
 
-func _add_high_detail_building(scene: PackedScene, position: Vector3, scale_factor: float, label: String) -> void:
+func _add_high_detail_building(scene: PackedScene, position: Vector3, scale_factor: float, label: String, requested_yaw: float = -1.0) -> void:
 	if scene == null:
 		return
 	var model := scene.instantiate() as Node3D
@@ -88,7 +88,7 @@ func _add_high_detail_building(scene: PackedScene, position: Vector3, scale_fact
 	model.name = label
 	model.position = Vector3(position.x, 0.035, position.z)
 	model.scale = Vector3.ONE * scale_factor
-	model.rotation.y = float(rng.randi_range(0, 3)) * PI * 0.5
+	model.rotation.y = requested_yaw if requested_yaw >= 0.0 else float(rng.randi_range(0, 3)) * PI * 0.5
 	add_child(model)
 
 	# A simple collision volume keeps the authored building solid without
@@ -218,12 +218,12 @@ func _build_blocks() -> void:
 					var frontage_x := center_x + side_sign * (14.5 if mixed else rng.randf_range(-5.0, 5.0))
 					var frontage_z := center_z + side_sign * (13.0 if mixed else rng.randf_range(-5.0, 5.0))
 					var facade_position := Vector3(frontage_x, 0.0, frontage_z)
-					var facade_yaw := 0.0 if frontage_index == 0 else PI
 					_add_high_detail_building(
 						high_detail_apartment_scene,
 						facade_position,
 						rng.randf_range(0.68, 0.76),
-						"HighDetailApartment_%02d_%02d_%d" % [block_x, block_z, frontage_index]
+						"HighDetailApartment_%02d_%02d_%d" % [block_x, block_z, frontage_index],
+						0.0 if frontage_index == 0 else PI
 					)
 			else:
 				for offset_x in [-14.0, 14.0]:
