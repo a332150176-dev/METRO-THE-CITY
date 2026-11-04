@@ -13,6 +13,7 @@ var money_label: Label
 var reputation_label: Label
 var selected_character: String = "noam"
 var sprint_button: Button
+var action_button: Button
 
 func show_character_selection() -> void:
 	selected_character = GameState.selected_character
@@ -98,6 +99,12 @@ func show_gameplay() -> void:
 	money_label.add_theme_font_size_override("font_size", 20)
 	root.add_child(money_label)
 
+	reputation_label = Label.new()
+	reputation_label.position = Vector2(26.0, 170.0)
+	reputation_label.text = "מוניטין: %d" % GameState.reputation
+	reputation_label.add_theme_font_size_override("font_size", 17)
+	root.add_child(reputation_label)
+
 	joystick = TouchJoystick.new()
 	joystick.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	joystick.position = Vector2(24.0, -190.0)
@@ -137,3 +144,13 @@ func set_mission(title: String, description: String, reward: int, index: int) ->
 func set_money(value: int) -> void:
 	if money_label != null:
 		money_label.text = "₪ %d" % value
+
+
+func set_reputation(value: int) -> void:
+	if reputation_label != null:
+		reputation_label.text = "מוניטין: %d" % value
+
+
+func set_action_label(value: String) -> void:
+	if action_button != null and action_button.text != value:
+		action_button.text = value

@@ -84,7 +84,7 @@ func lead_distance(source: TrafficCar, direction: Vector3) -> float:
 
 func lane_clear(source: TrafficCar, direction: Vector3) -> bool:
 	for other in cars:
-		if not is_instance_valid(other) or other == source or other.is_queued_for_deletion():
+		if not is_instance_valid(other) or other == source or other.is_queued_for_deletion() or other.player_driving:
 			continue
 		var relative := other.global_position - source.global_position
 		var ahead := relative.dot(direction)

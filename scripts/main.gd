@@ -121,11 +121,15 @@ func _on_interaction() -> void:
 		return
 	if active_vehicle != null and is_instance_valid(active_vehicle):
 		active_vehicle.exit_vehicle()
+		if mission_manager != null:
+			mission_manager.vehicle = null
 		active_vehicle = null
 		return
 	var nearby := _nearest_vehicle()
 	if nearby != null:
 		active_vehicle = nearby
+		if mission_manager != null:
+			mission_manager.vehicle = active_vehicle
 		active_vehicle.enter_vehicle(player, hud.get_joystick())
 	else:
 		player.request_interaction()

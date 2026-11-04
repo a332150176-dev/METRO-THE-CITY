@@ -5,6 +5,7 @@ signal mission_updated(title: String, description: String, reward: int, index: i
 signal mission_completed(reward: int)
 
 var player: PlayerController
+var vehicle: TrafficCar
 var current_index: int = 0
 var marker: MeshInstance3D
 var missions: Array[Dictionary] = [
@@ -56,8 +57,11 @@ func _publish_current() -> void:
 func _process(_delta: float) -> void:
 	if player == null or current_index >= missions.size():
 		return
+	var tracked_position := player.global_position
+	if vehicle != null and is_instance_valid(vehicle) and vehicle.player_driving:
+		tracked_position = vehicle.global_position
 	var target: Vector3 = missions[current_index]["target"]
-	if Vector2(player.global_position.x, player.global_position.z).distance_to(Vector2(target.x, target.z)) < 5.5:
+	if Vector2(tracked_position.x, tracked_position.z).distance_to(Vector2(target.x, target.z)) < 5.5:
 		_complete_current()
 
 func _complete_current() -> void:
