@@ -47,7 +47,7 @@ func load_assets() -> void:
 func assets_ready() -> bool:
 	return packed_scenes.has("body") and packed_scenes.has("hair") and packed_scenes.has("top") and packed_scenes.has("bottom") and packed_scenes.has("boots") and packed_scenes.has("movement")
 
-func create_character(character_id: String = "noam") -> Node3D:
+func create_character(character_id: String = "noam", custom_shirt_color: String = "") -> Node3D:
 	if not assets_ready():
 		return null
 	var body_instance := packed_scenes["body"].instantiate() as Node3D
@@ -64,7 +64,7 @@ func create_character(character_id: String = "noam") -> Node3D:
 	_attach_part(body_instance, skeleton, "top")
 	_attach_part(body_instance, skeleton, "bottom")
 	_attach_part(body_instance, skeleton, "boots")
-	_apply_character_colors(body_instance, character_id)
+	_apply_character_colors(body_instance, character_id, custom_shirt_color)
 	_hide_covered_skin(body_instance)
 
 	var animation_source: Node = (packed_scenes["movement"] as PackedScene).instantiate()
@@ -164,7 +164,7 @@ func _clear_scene_owners(node: Node) -> void:
 	for child in node.get_children():
 		_clear_scene_owners(child)
 
-func _apply_character_colors(body_root: Node3D, character_id: String) -> void:
+func _apply_character_colors(body_root: Node3D, character_id: String, custom_shirt_color: String = "") -> void:
 	var character := CharacterCatalog.get_character(character_id)
 	var hair_colors := {
 		"noam": Color("#30241e"),
@@ -178,8 +178,8 @@ func _apply_character_colors(body_root: Node3D, character_id: String) -> void:
 		"trousers": character["pants"],
 		"boots": Color("#252b30")
 	}
-	if character_id != "pedestrian" and not GameState.custom_shirt_color.is_empty():
-		palette["shirt"] = Color(GameState.custom_shirt_color)
+	if character_id != "pedestrian" and not custom_shirt_color.is_empty():
+		palette["shirt"] = Color(custom_shirt_color)
 	var meshes: Array[MeshInstance3D] = []
 	_collect_mesh_instances(body_root, meshes)
 	for mesh_instance in meshes:
