@@ -149,7 +149,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
 		return
 	if event is InputEventScreenTouch:
-		if event.pressed and event.position.x > get_viewport_rect().size.x * 0.44 and look_touch_index == -1:
+		if event.pressed and event.position.x > get_viewport().get_visible_rect().size.x * 0.44 and look_touch_index == -1:
 			look_touch_index = event.index
 		elif not event.pressed and event.index == look_touch_index:
 			look_touch_index = -1
