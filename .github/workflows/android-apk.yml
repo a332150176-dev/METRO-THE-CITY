@@ -8,6 +8,7 @@ on:
       - "export_presets.cfg"
       - "scenes/**"
       - "scripts/**"
+      - "assets/**"
       - ".github/workflows/android-apk.yml"
       - ".github/debug.keystore.b64"
   workflow_dispatch:
