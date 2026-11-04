@@ -57,16 +57,16 @@ func _refresh_actor_simulation() -> void:
 		if not is_instance_valid(car) or car.is_queued_for_deletion():
 			continue
 		var car_position := Vector2(car.global_position.x, car.global_position.z)
-		var active := car.player_driving or player_position.distance_to(car_position) <= simulation_radius
-		if car.is_physics_processing() != active:
-			car.set_physics_process(active)
+		var car_active := car.player_driving or player_position.distance_to(car_position) <= simulation_radius
+		if car.is_physics_processing() != car_active:
+			car.set_physics_process(car_active)
 	for pedestrian in pedestrians:
 		if not is_instance_valid(pedestrian) or pedestrian.is_queued_for_deletion():
 			continue
 		var pedestrian_position := Vector2(pedestrian.global_position.x, pedestrian.global_position.z)
-		var active := player_position.distance_to(pedestrian_position) <= simulation_radius
-		if pedestrian.is_physics_processing() != active:
-			pedestrian.set_physics_process(active)
+		var pedestrian_active := player_position.distance_to(pedestrian_position) <= simulation_radius
+		if pedestrian.is_physics_processing() != pedestrian_active:
+			pedestrian.set_physics_process(pedestrian_active)
 
 func _spawn_one_car(seed_value: int) -> void:
 	var intersection_count := network.GRID_SIZE * network.GRID_SIZE
