@@ -90,5 +90,33 @@ func _run_smoke_test() -> void:
 		quit(1)
 		return
 
-	print("METRO smoke test passed: 5x5 city, roads, AI, campaign, customization, jump, vehicle driving and mission completion")
+	var store := game.get_node_or_null("InteractiveStores") as StoreSystem
+	if store == null:
+		push_error("Smoke test: interactive minimarket was not created")
+		quit(1)
+		return
+	store.configure(game.player)
+	GameState.add_reward(50, 0)
+	game.player.global_position = store.get_door_position()
+	if not store.try_interact() or not store.inside_store:
+		push_error("Smoke test: player could not enter the minimarket")
+		quit(1)
+		return
+	game.player.global_position = store.get_product_position("water")
+	if not store.try_interact():
+		push_error("Smoke test: product shelf interaction failed")
+		quit(1)
+		return
+	game.player.global_position = store.get_checkout_position()
+	if not store.try_interact() or GameState.item_count("water") < 1:
+		push_error("Smoke test: checkout did not save a purchased item")
+		quit(1)
+		return
+	game.player.global_position = store.door_inside_position
+	if not store.try_interact() or store.inside_store:
+		push_error("Smoke test: player could not exit the minimarket")
+		quit(1)
+		return
+
+	print("METRO smoke test passed: city, traffic, campaign, vehicles, interactive store, checkout and persistent inventory")
 	quit(0)
