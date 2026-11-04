@@ -8,6 +8,7 @@ const SAVE_PATH: String = "user://metro_save.cfg"
 
 var money: int = 0
 var reputation: int = 0
+var inventory: Dictionary = {}
 var selected_character: String = "noam"
 var mission_index: int = 0
 var campaign_started: bool = false
@@ -22,6 +23,19 @@ func add_reward(amount: int, reputation_points: int = 1) -> void:
 	money_changed.emit(money)
 	reputation_changed.emit(reputation)
 	save_progress()
+
+func purchase_item(item_id: String, price: int) -> bool:
+	if item_id.strip_edges().is_empty() or price <= 0 or money < price:
+		return false
+	money -= price
+	inventory[item_id] = int(inventory.get(item_id, 0)) + 1
+	money_changed.emit(money)
+	save_progress()
+	return true
+
+func item_count(item_id: String) -> int:
+	return int(inventory.get(item_id, 0))
+
 
 func set_shirt_color(color: Color) -> void:
 	custom_shirt_color = "#" + color.to_html(false).trim_prefix("#")
@@ -48,6 +62,7 @@ func reset_campaign() -> void:
 func save_progress() -> void:
 	var config := ConfigFile.new()
 	config.set_value("player", "money", money)
+	config.set_value("player", "inventory", inventory)
 	config.set_value("player", "reputation", reputation)
 	config.set_value("player", "character", selected_character)
 	config.set_value("player", "custom_shirt_color", custom_shirt_color)
@@ -63,6 +78,8 @@ func load_progress() -> void:
 	if error != OK:
 		return
 	money = maxi(0, int(config.get_value("player", "money", 0)))
+	var saved_inventory: Variant = config.get_value("player", "inventory", {})
+	inventory = saved_inventory if saved_inventory is Dictionary else {}
 	reputation = maxi(0, int(config.get_value("player", "reputation", 0)))
 	selected_character = str(config.get_value("player", "character", "noam"))
 	custom_shirt_color = str(config.get_value("player", "custom_shirt_color", ""))
