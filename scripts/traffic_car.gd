@@ -21,6 +21,9 @@ var driver: PlayerController
 var driving_joystick: TouchJoystick
 var vehicle_camera: Camera3D
 var wheel_meshes: Array[MeshInstance3D] = []
+var pursuit_target: Node3D
+var pursuit_route_clock: float = 0.0
+var pursuit_lane: float = 3.1
 
 func setup(network: RoadNetwork, controller: TrafficController, start_id: int, goal_id: int, color: Color, lane: float = 3.1, manager: TrafficManager = null, type: String = "sedan") -> void:
 	route_network = network
@@ -294,6 +297,47 @@ func _build_vehicle() -> void:
 	if vehicle_type == "van":
 		_add_box(visual, Vector3(0.05, 0.52, 0.04), Vector3(0.0, 1.39, 1.62), paint_color.darkened(0.13), 0.6, 0.0)
 
+func begin_pursuit(target: Node3D) -> void:
+	pursuit_target = target
+	pursuit_route_clock = 99.0
+	pursuit_lane = 3.1 if int(get_instance_id()) % 2 == 0 else -3.1
+	_refresh_pursuit_route()
+
+func _refresh_pursuit_route() -> void:
+	if pursuit_target == null or not is_instance_valid(pursuit_target) or route_network == null:
+		return
+	var target_data := route_network.nearest_intersection(pursuit_target.global_position)
+	var target_id := int(target_data["id"])
+	if target_id == route_goal_id and route_index < route.size():
+		return
+	var current_data := route_network.nearest_intersection(global_position)
+	var start_id := int(current_data["id"])
+	route_goal_id = target_id
+	route = route_network.build_route(start_id, target_id, pursuit_lane)
+	route_index = 1
+	speed = maxf(speed, 4.0)
+
+func _drive_pursuit_direct(delta: float) -> void:
+	if pursuit_target == null or not is_instance_valid(pursuit_target):
+		pursuit_target = null
+		return
+	var to_target := pursuit_target.global_position - global_position
+	to_target.y = 0.0
+	var distance := to_target.length()
+	if distance < 2.5:
+		speed = move_toward(speed, 0.0, 12.0 * delta)
+	else:
+		var direction := to_target.normalized()
+		var desired_speed := 13.0 if distance > 14.0 else 7.0
+		if distance < 5.0:
+			desired_speed = 3.0
+		speed = move_toward(speed, desired_speed, 8.0 * delta)
+		rotation.y = lerp_angle(rotation.y, atan2(-direction.x, -direction.z), minf(1.0, delta * 3.8))
+		velocity.x = direction.x * speed
+		velocity.z = direction.z * speed
+		velocity.y = 0.0
+		move_and_slide()
+
 func _collect_authored_wheels(node: Node) -> void:
 	if node is MeshInstance3D and str(node.name).begins_with("wheel"):
 		wheel_meshes.append(node as MeshInstance3D)
@@ -351,8 +395,16 @@ func _physics_process(delta: float) -> void:
 	if player_driving:
 		_drive_player(delta)
 		return
+	if pursuit_target != null and is_instance_valid(pursuit_target):
+		pursuit_route_clock += delta
+		if pursuit_route_clock >= 1.6:
+			pursuit_route_clock = 0.0
+			_refresh_pursuit_route()
 	if route.size() < 2 or route_index >= route.size():
-		queue_free()
+		if pursuit_target != null and is_instance_valid(pursuit_target):
+			_drive_pursuit_direct(delta)
+		else:
+			queue_free()
 		return
 
 	var target := route[route_index]
