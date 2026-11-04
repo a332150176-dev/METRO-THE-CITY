@@ -3,6 +3,7 @@ class_name GameHUD
 
 signal character_selected(character_id: String)
 signal interaction_pressed
+signal jump_pressed
 signal sprint_toggled(enabled: bool)
 
 var joystick: TouchJoystick
@@ -24,12 +25,12 @@ func show_character_selection() -> void:
 
 	var panel := PanelContainer.new()
 	panel.set_anchors_preset(Control.PRESET_CENTER)
-	panel.position = Vector2(-245.0, -205.0)
-	panel.size = Vector2(490.0, 410.0)
+	panel.position = Vector2(-245.0, -245.0)
+	panel.size = Vector2(490.0, 490.0)
 	overlay.add_child(panel)
 
 	var layout := VBoxContainer.new()
-	layout.add_theme_constant_override("separation", 12)
+	layout.add_theme_constant_override("separation", 8)
 	panel.add_child(layout)
 
 	var title := Label.new()
@@ -49,13 +50,13 @@ func show_character_selection() -> void:
 		var data := CharacterCatalog.get_character(character_id)
 		var button := Button.new()
 		button.text = "%s  —  %s" % [data["name"], data["subtitle"]]
-		button.custom_minimum_size = Vector2(0.0, 54.0)
+		button.custom_minimum_size = Vector2(0.0, 42.0)
 		button.pressed.connect(func(): _select_character(character_id))
 		layout.add_child(button)
 
 	var start_button := Button.new()
 	start_button.text = "כניסה לעיר"
-	start_button.custom_minimum_size = Vector2(0.0, 58.0)
+	start_button.custom_minimum_size = Vector2(0.0, 48.0)
 	start_button.add_theme_font_size_override("font_size", 22)
 	start_button.pressed.connect(_start_selected_character)
 	layout.add_child(start_button)

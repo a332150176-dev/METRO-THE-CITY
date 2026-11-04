@@ -11,6 +11,7 @@ var reputation: int = 0
 var selected_character: String = "noam"
 var mission_index: int = 0
 var campaign_started: bool = false
+var custom_shirt_color: String = ""
 
 func _ready() -> void:
 	load_progress()
@@ -20,6 +21,14 @@ func add_reward(amount: int, reputation_points: int = 1) -> void:
 	reputation += maxi(0, reputation_points)
 	money_changed.emit(money)
 	reputation_changed.emit(reputation)
+	save_progress()
+
+func set_shirt_color(color: Color) -> void:
+	custom_shirt_color = color.to_html(false)
+	save_progress()
+
+func clear_shirt_color() -> void:
+	custom_shirt_color = ""
 	save_progress()
 
 func set_character(character_id: String) -> void:
@@ -41,6 +50,7 @@ func save_progress() -> void:
 	config.set_value("player", "money", money)
 	config.set_value("player", "reputation", reputation)
 	config.set_value("player", "character", selected_character)
+	config.set_value("player", "custom_shirt_color", custom_shirt_color)
 	config.set_value("campaign", "mission_index", mission_index)
 	config.set_value("campaign", "started", campaign_started)
 	var error := config.save(SAVE_PATH)
@@ -55,6 +65,7 @@ func load_progress() -> void:
 	money = maxi(0, int(config.get_value("player", "money", 0)))
 	reputation = maxi(0, int(config.get_value("player", "reputation", 0)))
 	selected_character = str(config.get_value("player", "character", "noam"))
+	custom_shirt_color = str(config.get_value("player", "custom_shirt_color", ""))
 	if not ["noam", "lior", "amit"].has(selected_character):
 		selected_character = "noam"
 	mission_index = maxi(0, int(config.get_value("campaign", "mission_index", 0)))

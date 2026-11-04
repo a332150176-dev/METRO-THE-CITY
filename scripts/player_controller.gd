@@ -9,6 +9,7 @@ const DECELERATION: float = 26.0
 
 var joystick: TouchJoystick
 var sprinting: bool = false
+var jump_requested: bool = false
 var character_id: String = "noam"
 var camera: Camera3D
 var visual_root: Node3D
@@ -27,6 +28,9 @@ func set_joystick_source(source: TouchJoystick) -> void:
 
 func set_sprinting(enabled: bool) -> void:
 	sprinting = enabled
+
+func request_jump() -> void:
+	jump_requested = true
 
 func request_interaction() -> void:
 	interaction_requested.emit()

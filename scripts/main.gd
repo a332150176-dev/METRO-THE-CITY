@@ -90,6 +90,7 @@ func _start_game(character_id: String) -> void:
 	hud.show_gameplay()
 	player.set_joystick_source(hud.get_joystick())
 	hud.sprint_toggled.connect(player.set_sprinting)
+	hud.jump_pressed.connect(player.request_jump)
 	hud.interaction_pressed.connect(_on_interaction)
 
 	mission_manager = MISSION_SCRIPT.new()
