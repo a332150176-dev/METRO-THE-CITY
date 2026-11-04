@@ -19,14 +19,22 @@ func configure(player_node: Node3D, traffic_manager: TrafficManager) -> void:
 	wanted_level_changed.emit(wanted_level)
 
 func report_vehicle_theft() -> void:
+	_raise_wanted_level(1, "המשטרה קיבלה דיווח על גניבת רכב.")
+
+func report_driving_collision(severity: int) -> void:
+	var increase := 2 if severity >= 2 else 1
+	var message := "דווח על פגיעה בהולך רגל." if severity >= 2 else "דווח על תאונת דרכים."
+	_raise_wanted_level(increase, message)
+
+func _raise_wanted_level(amount: int, message: String) -> void:
 	if wanted_level >= 5:
 		return
-	wanted_level = mini(5, wanted_level + 1)
+	wanted_level = mini(5, wanted_level + clampi(amount, 1, 3))
 	decay_clock = 0.0
 	if traffic != null:
 		traffic.set_wanted_level(wanted_level, player)
 	wanted_level_changed.emit(wanted_level)
-	status_changed.emit("המשטרה קיבלה דיווח על גניבת רכב. רמת מבוקשות: %d/5" % wanted_level)
+	status_changed.emit("%s רמת מבוקשות: %d/5" % [message, wanted_level])
 
 func _process(delta: float) -> void:
 	if wanted_level <= 0 or player == null or not is_instance_valid(player) or traffic == null:
