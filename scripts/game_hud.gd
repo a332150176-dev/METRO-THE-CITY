@@ -57,6 +57,40 @@ func show_character_selection() -> void:
 		button.pressed.connect(func(): _select_character(character_id))
 		layout.add_child(button)
 
+	var color_title := Label.new()
+	color_title.text = "התאם את צבע החולצה"
+	color_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	color_title.add_theme_font_size_override("font_size", 17)
+	layout.add_child(color_title)
+
+	var color_row := HBoxContainer.new()
+	color_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	color_row.add_theme_constant_override("separation", 7)
+	layout.add_child(color_row)
+	var shirt_colors := [
+		{"name": "כחול", "value": Color("#2876a8")},
+		{"name": "אדום", "value": Color("#b65c37")},
+		{"name": "ירוק", "value": Color("#477d5c")},
+		{"name": "שחור", "value": Color("#30343a")}
+	]
+	for color_data in shirt_colors:
+		var color_button := Button.new()
+		color_button.text = color_data["name"]
+		color_button.custom_minimum_size = Vector2(96.0, 34.0)
+		var color_style := StyleBoxFlat.new()
+		color_style.bg_color = color_data["value"]
+		color_style.set_corner_radius_all(7)
+		color_button.add_theme_stylebox_override("normal", color_style)
+		color_button.add_theme_color_override("font_color", Color.WHITE)
+		color_button.pressed.connect(func(): GameState.set_shirt_color(color_data["value"]))
+		color_row.add_child(color_button)
+
+	var clear_color_button := Button.new()
+	clear_color_button.text = "צבע ברירת מחדל"
+	clear_color_button.custom_minimum_size = Vector2(0.0, 30.0)
+	clear_color_button.pressed.connect(GameState.clear_shirt_color)
+	layout.add_child(clear_color_button)
+
 	var start_button := Button.new()
 	start_button.text = "כניסה לעיר"
 	start_button.custom_minimum_size = Vector2(0.0, 48.0)
