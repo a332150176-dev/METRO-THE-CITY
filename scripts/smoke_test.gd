@@ -56,6 +56,10 @@ func _run_smoke_test() -> void:
 		push_error("Smoke test: pedestrians are not using rigged animated models")
 		quit(1)
 		return
+	if not first_pedestrian.rigged_animation.has_animation("Walking_A"):
+		push_error("Smoke test: pedestrian walking animation clip is missing")
+		quit(1)
+		return
 	if traffic.vehicle_scenes.size() < 8:
 		push_error("Smoke test: all eight authored vehicle models did not load")
 		quit(1)
@@ -94,6 +98,17 @@ func _run_smoke_test() -> void:
 		return
 	if game.player.character_animation_player == null:
 		push_error("Smoke test: player character rig and animation player did not initialize")
+		quit(1)
+		return
+	var player_animations := game.player.character_animation_player.get_animation_list()
+	print("METRO player animation clips: ", player_animations)
+	for required_clip in ["Idle_A", "Walking_A", "Running_A"]:
+		if not game.player.character_animation_player.has_animation(required_clip):
+			push_error("Smoke test: missing humanoid animation clip " + required_clip)
+			quit(1)
+			return
+	if game.player.character_animation_player.current_animation != "Idle_A":
+		push_error("Smoke test: rigged player did not enter idle animation")
 		quit(1)
 		return
 
