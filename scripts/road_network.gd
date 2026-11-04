@@ -1,7 +1,7 @@
 extends RefCounted
 class_name RoadNetwork
 
-const GRID_SIZE: int = 5
+const GRID_SIZE: int = 7
 const SPACING: float = 76.0
 const TURN_RADIUS: float = 7.0
 
