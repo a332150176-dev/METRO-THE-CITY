@@ -14,6 +14,7 @@ The current reconstructed gameplay baseline includes:
 - Third-person player movement, three selectable character profiles, persistent shirt-color customization, jump, and on-screen Android touch controls.
 - Enterable vehicles with a third-person driving camera, forward/reverse controls, steering and an exit action.
 - A starter campaign with objectives, rewards, money and reputation, with local save data between launches.
+- A live mini-map showing the city grid, next mission target and the player's position, including while driving.
 
 The scene uses procedural geometry and intentionally modest rendering settings as a first playable baseline for the M36 Plus target. The source here is a reconstruction from the established V10 design requirements; the original V10 archive is still being transferred and has not yet been verified as restored.
 

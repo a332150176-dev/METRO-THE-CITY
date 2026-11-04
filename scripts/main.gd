@@ -98,6 +98,7 @@ func _start_game(character_id: String) -> void:
 	add_child(mission_manager)
 	mission_manager.mission_updated.connect(hud.set_mission)
 	mission_manager.setup(player, GameState.mission_index)
+	hud.set_navigation_sources(player, mission_manager)
 	GameState.campaign_started = true
 	GameState.save_progress()
 

@@ -82,6 +82,12 @@ func show_gameplay() -> void:
 	title.add_theme_font_size_override("font_size", 19)
 	root.add_child(title)
 
+	minimap = CityMiniMap.new()
+	minimap.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	minimap.position = Vector2(-188.0, 18.0)
+	minimap.size = Vector2(168.0, 168.0)
+	root.add_child(minimap)
+
 	mission_label = Label.new()
 	mission_label.position = Vector2(26.0, 52.0)
 	mission_label.size = Vector2(480.0, 34.0)
@@ -155,3 +161,8 @@ func set_reputation(value: int) -> void:
 func set_action_label(value: String) -> void:
 	if action_button != null and action_button.text != value:
 		action_button.text = value
+
+
+func set_navigation_sources(player_node: PlayerController, mission_node: MissionManager) -> void:
+	if minimap != null:
+		minimap.set_sources(player_node, mission_node)

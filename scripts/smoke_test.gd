@@ -57,6 +57,11 @@ func _run_smoke_test() -> void:
 		quit(1)
 		return
 
+	if game.hud.minimap == null:
+		push_error("Smoke test: navigation mini-map is missing")
+		quit(1)
+		return
+
 	var test_car: TrafficCar = traffic.cars[0]
 	test_car.enter_vehicle(game.player, game.hud.get_joystick())
 	if not test_car.player_driving:
