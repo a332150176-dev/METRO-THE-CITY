@@ -425,7 +425,7 @@ func exit_vehicle() -> void:
 	route_index = 1
 	speed = 0.0
 
-	# Animate emergency lights only on active pursuit vehicles.
+func _physics_process(delta: float) -> void:
 	_update_police_siren(delta)
 	for wheel in wheel_meshes:
 		if is_instance_valid(wheel):
