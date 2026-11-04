@@ -71,14 +71,17 @@ func create_character(character_id: String = "noam") -> Node3D:
 	_clear_scene_owners(animation_source)
 	var source_player := _find_animation_player(animation_source)
 	if source_player != null:
+		if packed_scenes.has("general"):
+			var general_source: Node = (packed_scenes["general"] as PackedScene).instantiate()
+			_clear_scene_owners(general_source)
+			var general_player := _find_animation_player(general_source)
+			if general_player != null:
+				_merge_animation_libraries(source_player, general_player)
+			general_source.free()
 		source_player.owner = null
 		source_player.reparent(body_instance)
 		source_player.name = "CharacterAnimationPlayer"
-		var root_path := source_player.root_node
-		if root_path.is_empty():
-			source_player.root_node = NodePath("..")
-		else:
-			source_player.root_node = NodePath("..")
+		source_player.root_node = NodePath("..")
 		animation_source.free()
 	else:
 		animation_source.free()
@@ -89,6 +92,32 @@ func create_character(character_id: String = "noam") -> Node3D:
 	body_instance.scale = Vector3.ONE * 0.82
 	result.set_meta("character_id", character_id)
 	return result
+
+func _merge_animation_libraries(target: AnimationPlayer, source: AnimationPlayer) -> void:
+	var target_library := target.get_animation_library("") as AnimationLibrary
+	if target_library == null:
+		target_library = AnimationLibrary.new()
+		var add_error := target.add_animation_library("", target_library)
+		if add_error != OK:
+			push_warning("Could not create default humanoid animation library: %s" % error_string(add_error))
+			return
+	for library_name in source.get_animation_library_list():
+		var source_library := source.get_animation_library(library_name) as AnimationLibrary
+		if source_library == null:
+			continue
+		for animation_name in source_library.get_animation_list():
+			var clip_name := str(animation_name)
+			if target.has_animation(clip_name):
+				continue
+			var source_clip := source_library.get_animation(clip_name)
+			if source_clip == null:
+				continue
+			var clip_copy := source_clip.duplicate(true) as Animation
+			if clip_copy == null:
+				continue
+			var add_clip_error := target_library.add_animation(clip_name, clip_copy)
+			if add_clip_error != OK:
+				push_warning("Could not merge humanoid animation %s: %s" % [clip_name, error_string(add_clip_error)])
 
 func _attach_part(body_root: Node3D, body_skeleton: Skeleton3D, part_key: String) -> void:
 	if not packed_scenes.has(part_key):
