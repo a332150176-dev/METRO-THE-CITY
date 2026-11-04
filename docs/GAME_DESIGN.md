@@ -4,8 +4,8 @@
 
 - Platform: Android, optimized for the M36 Plus test device.
 - Genre and camera: third-person, open-world action/adventure.
-- Visual target: realistic and detailed, with performance-aware asset budgets.
-- Performance target: stable 30 FPS on the target device before increasing visual complexity.
+- Visual target: detailed, believable urban architecture, realistic materials, varied human characters and a fully dressed street environment.
+- Quality-first workflow: do not simplify the visual target in advance; profile and optimize only after the intended visual result is in place.
 - World: a large, connected city with distinct neighborhoods and districts.
 - Traffic and pedestrians: moderate population to preserve frame time.
 - Activities: free-roam first, with optional activities and missions.
@@ -20,15 +20,15 @@
 
 The first APK was deliberately a compatibility and gameplay test. It demonstrated that the Android export installs and runs on the M36 Plus. It is not the intended visual quality bar.
 
-The current project uses Godot 4.3 Compatibility renderer. The city road graph now uses a 9×9 intersection grid (81 intersections) with eight blocks in each direction (64 continuous blocks). The residential districts use eight authored CC0 building models, and downtown uses five separate textured skyscraper models. One commercial lot is reserved for an enterable minimarket with authored 3D food/drink stock, product selection, checkout and saved inventory. Eight authored CC0 vehicle models provide civilian, delivery and emergency traffic. Vehicle theft and driving collisions trigger wanted levels; up to three police pursuit cars are dispatched, remain active outside the normal simulation radius, and flash red/blue emergency lights during pursuit. Distant cars and pedestrians are paused outside a 190 m player radius; interior visits pause city traffic and hide the minimap.
+The current project uses the Godot 4.3 Mobile renderer with anisotropic texture filtering, 2x 3D MSAA, sky-based ambient/reflected lighting, filmic tonemapping, fog and restrained glow. The city road graph now uses a 9×9 intersection grid (81 intersections) with eight blocks in each direction (64 continuous blocks). The residential districts use eight authored CC0 building models, with detailed Poly Haven apartment facades repeated through mixed-use and residential blocks; downtown uses five separate textured skyscraper models and additional Quaternius city set pieces. Asphalt uses PBR albedo, normal and roughness maps, and the avenues are dressed with authored trees, pedestrian crossings and 72 street lamps. One commercial lot is reserved for an enterable minimarket with authored 3D food/drink stock, product selection, checkout and saved inventory. Eight authored CC0 vehicle models provide civilian, delivery and emergency traffic. Vehicle theft and driving collisions trigger wanted levels; up to three police pursuit cars are dispatched, remain active outside the normal simulation radius, and flash red/blue emergency lights during pursuit. The city populates 24 traffic vehicles and 48 animated pedestrians, with three visual character palettes; distant actors are paused outside a 190 m player radius. Interior visits pause city traffic and hide the minimap.
 
 ## Performance rules
 
-1. Keep 30 FPS as the primary target; visual effects must earn their cost.
+1. Preserve the high-detail visual target first; profile performance after visual content is complete.
 2. Use instancing/batched meshes for repeated detail such as windows, lane paint and crosswalks.
 3. Keep traffic and pedestrian counts moderate and measure before increasing them.
 4. Add level-of-detail and distance-based visibility before filling distant neighborhoods with expensive detail.
-5. Test each major city expansion on the physical M36 Plus; editor/CI success is not proof of device performance.
+5. Test each major city expansion on the physical M36 Plus; editor/CI success is not proof of device performance. This is a final validation step, not a reason to pre-emptively reduce asset quality.
 
 ## Roadmap
 
