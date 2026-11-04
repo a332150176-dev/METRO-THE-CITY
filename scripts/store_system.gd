@@ -15,6 +15,7 @@ var roof: MeshInstance3D
 var left_door: MeshInstance3D
 var right_door: MeshInstance3D
 var products: Array[Dictionary] = []
+var product_models: Dictionary = {}
 
 var door_outside_position: Vector3:
 	get:
@@ -30,6 +31,7 @@ var checkout_position: Vector3:
 
 func _ready() -> void:
 	_create_catalog()
+	_load_product_models()
 	_build_store()
 
 func configure(player_node: PlayerController) -> void:
@@ -91,10 +93,10 @@ func try_interact() -> bool:
 
 func _create_catalog() -> void:
 	products = [
-		{"id": "water", "name": "מים מינרליים", "price": 8, "position": SHOP_CENTER + Vector3(-5.1, 0.15, -2.8), "color": Color("#64b8d8")},
-		{"id": "soda", "name": "משקה קל", "price": 12, "position": SHOP_CENTER + Vector3(5.1, 0.15, -2.8), "color": Color("#d66a45")},
-		{"id": "snack", "name": "חטיף", "price": 15, "position": SHOP_CENTER + Vector3(-5.1, 0.15, 2.4), "color": Color("#d5b24b")},
-		{"id": "sandwich", "name": "כריך", "price": 25, "position": SHOP_CENTER + Vector3(5.1, 0.15, 2.4), "color": Color("#8baf78")}
+		{"id": "water", "name": "מים מינרליים", "price": 8, "position": SHOP_CENTER + Vector3(-5.1, 0.15, -2.8), "color": Color("#64b8d8"), "model": "soda-bottle"},
+		{"id": "soda", "name": "משקה קל", "price": 12, "position": SHOP_CENTER + Vector3(5.1, 0.15, -2.8), "color": Color("#d66a45"), "model": "soda-can"},
+		{"id": "snack", "name": "חטיף", "price": 15, "position": SHOP_CENTER + Vector3(-5.1, 0.15, 2.4), "color": Color("#d5b24b"), "model": "candy-bar-wrapper"},
+		{"id": "sandwich", "name": "כריך", "price": 25, "position": SHOP_CENTER + Vector3(5.1, 0.15, 2.4), "color": Color("#8baf78"), "model": "sandwich"}
 	]
 
 func _build_store() -> void:
@@ -186,23 +188,51 @@ func _build_rack(center: Vector3, frame_color: Color) -> void:
 
 func _add_product_stock(product: Dictionary) -> void:
 	var center: Vector3 = product["position"]
-	var item_color: Color = product["color"]
+	var model_name := str(product.get("model", ""))
+	var packed_model := product_models.get(model_name) as PackedScene
 	for row in range(3):
 		for column in range(4):
-			var offset := Vector3((float(column) - 1.5) * 0.19, 0.7 + float(row) * 0.52, (float(column % 2) - 0.5) * 0.36)
-			var stock_size := Vector3(0.15, 0.28, 0.19)
-			if str(product["id"]) == "water" or str(product["id"]) == "soda":
-				var bottle := MeshInstance3D.new()
-				var bottle_mesh := CylinderMesh.new()
-				bottle_mesh.top_radius = 0.07
-				bottle_mesh.bottom_radius = 0.09
-				bottle_mesh.height = 0.32
-				bottle.mesh = bottle_mesh
-				bottle.position = center + offset
-				bottle.material_override = _material(item_color)
-				add_child(bottle)
-			else:
-				_add_visual_box(self, stock_size, center + offset, item_color)
+			var offset := Vector3((float(column) - 1.5) * 0.22, 0.66 + float(row) * 0.52, (float(column % 2) - 0.5) * 0.42)
+			if packed_model != null:
+				var stock_item := packed_model.instantiate() as Node3D
+				if stock_item != null:
+					stock_item.name = "Stock_%s_%d_%d" % [model_name, row, column]
+					var item_scale := 0.58
+					if model_name == "soda-bottle" or model_name == "soda-can" or model_name == "carton":
+						item_scale = 0.48
+					stock_item.scale = Vector3.ONE * item_scale
+					stock_item.position = center + offset
+					stock_item.rotation.y = float((row + column) % 4) * PI * 0.5
+					add_child(stock_item)
+					continue
+			var fallback := _add_visual_box(self, Vector3(0.15, 0.28, 0.19), center + offset, product["color"])
+
+func _load_product_models() -> void:
+	product_models.clear()
+	for model_name in ["soda-bottle", "soda-can", "sandwich", "candy-bar-wrapper", "burger", "carton", "bread"]:
+		var asset_path := "res://assets/products/%s.glb.b64" % model_name
+		if not FileAccess.file_exists(asset_path):
+			continue
+		var encoded := FileAccess.get_file_as_string(asset_path).strip_edges()
+		if encoded.is_empty():
+			continue
+		var binary := Marshalls.base64_to_raw(encoded)
+		var document := GLTFDocument.new()
+		var state := GLTFState.new()
+		var parse_error := document.append_from_buffer(binary, "res://assets/products/", state, 0)
+		if parse_error != OK:
+			push_warning("Could not load store product %s: %s" % [model_name, error_string(parse_error)])
+			continue
+		var model_scene := document.generate_scene(state)
+		if model_scene == null:
+			continue
+		var packed := PackedScene.new()
+		var pack_error := packed.pack(model_scene)
+		if pack_error == OK:
+			product_models[model_name] = packed
+		else:
+			push_warning("Could not pack store product %s: %s" % [model_name, error_string(pack_error)])
+		model_scene.free()
 
 func _add_static_box(parent: Node3D, box_size: Vector3, position: Vector3, color: Color) -> MeshInstance3D:
 	var body := StaticBody3D.new()
