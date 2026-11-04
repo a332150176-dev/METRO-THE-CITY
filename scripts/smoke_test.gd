@@ -27,8 +27,14 @@ func _run_smoke_test() -> void:
 		push_error("Smoke test: expanded city does not contain 49 intersections")
 		quit(1)
 		return
-	if game.get_node_or_null("ProceduralCity") == null:
+	var city_node := game.get_node_or_null("ProceduralCity")
+	if city_node == null:
 		push_error("Smoke test: procedural city is missing")
+		quit(1)
+		return
+	var authored_models: Array = city_node.get("suburban_meshes")
+	if authored_models.size() < 8:
+		push_error("Smoke test: authored suburban building models did not load")
 		quit(1)
 		return
 	var traffic := game.get_node_or_null("CityTraffic")
@@ -118,5 +124,5 @@ func _run_smoke_test() -> void:
 		quit(1)
 		return
 
-	print("METRO smoke test passed: 7x7 city, traffic, campaign, vehicles, interactive store, checkout and persistent inventory")
+	print("METRO smoke test passed: 7x7 city, eight textured GLB building models, traffic, campaign, vehicles, interactive store, checkout and persistent inventory")
 	quit(0)
