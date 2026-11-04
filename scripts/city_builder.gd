@@ -2,7 +2,7 @@ extends Node3D
 class_name CityBuilder
 
 const LIGHT_VISUAL := preload("res://scripts/traffic_light_visual.gd")
-const GRID_SIZE: int = 7
+const GRID_SIZE: int = 9
 const GRID_SPACING: float = 76.0
 const ROAD_WIDTH: float = 18.0
 const CITY_EDGE: float = 610.0
