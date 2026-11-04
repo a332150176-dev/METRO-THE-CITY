@@ -96,7 +96,7 @@ func _run_smoke_test() -> void:
 		quit(1)
 		return
 	store.configure(game.player)
-	GameState.add_reward(50, 0)
+	game_state.add_reward(50, 0)
 	game.player.global_position = store.get_door_position()
 	if not store.try_interact() or not store.inside_store:
 		push_error("Smoke test: player could not enter the minimarket")
@@ -108,7 +108,7 @@ func _run_smoke_test() -> void:
 		quit(1)
 		return
 	game.player.global_position = store.get_checkout_position()
-	if not store.try_interact() or GameState.item_count("water") < 1:
+	if not store.try_interact() or game_state.item_count("water") < 1:
 		push_error("Smoke test: checkout did not save a purchased item")
 		quit(1)
 		return
