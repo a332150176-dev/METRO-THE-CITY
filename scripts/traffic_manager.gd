@@ -160,7 +160,7 @@ func _refresh_actor_simulation() -> void:
 
 func _spawn_one_car(seed_value: int) -> void:
 	var intersection_count := network.GRID_SIZE * network.GRID_SIZE
-	var start_id := seed_value if seed_value >= 0 and seed_value < intersection_count else rng.randi_range(0, intersection_count - 1)
+	var start_id := rng.randi_range(0, intersection_count - 1)
 	var goal_id := rng.randi_range(0, intersection_count - 1)
 	while goal_id == start_id:
 		goal_id = rng.randi_range(0, intersection_count - 1)
