@@ -28,7 +28,9 @@ var high_detail_downtown_scene: PackedScene
 var high_detail_apartment_scene: PackedScene
 var high_detail_tree_scene: PackedScene
 var high_detail_setpiece_count: int = 0
+var high_detail_apartment_count: int = 0
 var high_detail_tree_count: int = 0
+var street_lamp_count: int = 0
 
 func build_city(controller: TrafficController) -> void:
 	traffic_controller = controller
@@ -43,6 +45,7 @@ func build_city(controller: TrafficController) -> void:
 	_build_suburban_model_batches()
 	_build_downtown_model_batches()
 	_build_batched_details()
+	_build_street_lighting()
 
 func _load_visual_upgrade_assets() -> void:
 	var downtown_resource := load("res://assets/visual_upgrade/downtown.glb")
@@ -100,6 +103,8 @@ func _add_high_detail_building(scene: PackedScene, position: Vector3, scale_fact
 	collision.shape = shape
 	body.add_child(collision)
 	high_detail_setpiece_count += 1
+	if scene == high_detail_apartment_scene:
+		high_detail_apartment_count += 1
 
 func _material(color: Color, roughness: float = 0.88) -> StandardMaterial3D:
 	var result := StandardMaterial3D.new()
@@ -190,17 +195,36 @@ func _build_blocks() -> void:
 			var mixed := not downtown and (block_x == district_center or block_x == district_center + 1 or block_z == district_center or block_z == district_center + 1)
 			var palette: Array[Color] = downtown_colors if downtown else (mixed_colors if mixed else residential_colors)
 			var is_market_block := block_x == district_center and block_z == district_center
-			var use_high_detail_block := downtown and not is_market_block and high_detail_downtown_scene != null and high_detail_apartment_scene != null
+			var has_downtown_asset := downtown and not is_market_block and high_detail_downtown_scene != null and high_detail_apartment_scene != null
+			var has_apartment_assets := not downtown and not is_market_block and high_detail_apartment_scene != null
+			var use_detailed_apartments := has_apartment_assets and (mixed or posmod(block_x + block_z * 2, 4) == 0)
+			var use_high_detail_block := has_downtown_asset or use_detailed_apartments
 
-			if use_high_detail_block:
-				var selected_scene := high_detail_downtown_scene if (block_x + block_z) % 2 == 0 else high_detail_apartment_scene
-				var selected_scale := 0.92 if selected_scene == high_detail_downtown_scene else 0.88
+			if has_downtown_asset:
+				var selected_scene := high_detail_downtown_scene if rng.randf() < 0.72 else high_detail_apartment_scene
+				var selected_scale := rng.randf_range(0.86, 1.02) if selected_scene == high_detail_downtown_scene else 0.78
 				_add_high_detail_building(
 					selected_scene,
 					Vector3(center_x, 0.0, center_z),
 					selected_scale,
-					"HighDetailCityBlock_%02d_%02d" % [block_x, block_z]
+					"HighDetailDowntown_%02d_%02d" % [block_x, block_z]
 				)
+			elif use_detailed_apartments:
+				# The dense mixed-use belt gets paired authored facades; residential
+				# blocks receive one larger facade to break up repeated low-detail kits.
+				var facade_count := 2 if mixed else 1
+				for frontage_index in range(facade_count):
+					var side_sign := -1.0 if frontage_index == 0 else 1.0
+					var frontage_x := center_x + side_sign * (14.5 if mixed else rng.randf_range(-5.0, 5.0))
+					var frontage_z := center_z + side_sign * (13.0 if mixed else rng.randf_range(-5.0, 5.0))
+					var facade_position := Vector3(frontage_x, 0.0, frontage_z)
+					var facade_yaw := 0.0 if frontage_index == 0 else PI
+					_add_high_detail_building(
+						high_detail_apartment_scene,
+						facade_position,
+						rng.randf_range(0.68, 0.76),
+						"HighDetailApartment_%02d_%02d_%d" % [block_x, block_z, frontage_index]
+					)
 			else:
 				for offset_x in [-14.0, 14.0]:
 					for offset_z in [-14.0, 14.0]:
@@ -510,6 +534,55 @@ func _build_batched_details() -> void:
 	_add_multimesh_batch(Vector3(11.0, 0.035, 0.95), crosswalk_x_transforms, Color("#e6e4d8"))
 	_add_multimesh_batch(Vector3(1.55, 1.62, 0.12), window_frame_transforms, Color("#414b50"), 0.7)
 	_add_multimesh_batch(Vector3(1.24, 1.32, 0.1), window_glass_transforms, Color("#557785"), 0.28)
+
+func _build_street_lighting() -> void:
+	# Give the main avenues a recognizable urban silhouette without scattering
+	# unbatched lights through every block.
+	for road_index in range(GRID_SIZE):
+		var road_coordinate := (float(road_index) - float(GRID_SIZE - 1) * 0.5) * GRID_SPACING
+		for segment in range(0, GRID_SIZE - 1, 2):
+			var along := (float(segment) + 1.0 - float(GRID_SIZE - 1) * 0.5) * GRID_SPACING
+			_add_street_lamp(Vector3(along, 0.0, road_coordinate + 12.25), 0.0)
+			_add_street_lamp(Vector3(road_coordinate - 12.25, 0.0, along), PI * 0.5)
+
+func _add_street_lamp(position: Vector3, yaw: float) -> void:
+	var lamp_root := Node3D.new()
+	lamp_root.name = "StreetLamp_%03d" % street_lamp_count
+	lamp_root.position = position
+	lamp_root.rotation.y = yaw
+	add_child(lamp_root)
+
+	var pole := MeshInstance3D.new()
+	var pole_mesh := CylinderMesh.new()
+	pole_mesh.top_radius = 0.055
+	pole_mesh.bottom_radius = 0.095
+	pole_mesh.height = 5.7
+	pole_mesh.radial_segments = 10
+	pole.mesh = pole_mesh
+	pole.position.y = 2.85
+	pole.material_override = _material(Color("#3b4449"), 0.72)
+	lamp_root.add_child(pole)
+
+	var arm := MeshInstance3D.new()
+	var arm_mesh := BoxMesh.new()
+	arm_mesh.size = Vector3(0.92, 0.075, 0.075)
+	arm.mesh = arm_mesh
+	arm.position = Vector3(0.39, 5.55, 0.0)
+	arm.material_override = pole.material_override
+	lamp_root.add_child(arm)
+
+	var housing := MeshInstance3D.new()
+	var housing_mesh := BoxMesh.new()
+	housing_mesh.size = Vector3(0.52, 0.14, 0.28)
+	housing.mesh = housing_mesh
+	housing.position = Vector3(0.82, 5.48, 0.0)
+	var housing_material := _material(Color("#d5c7a6"), 0.34)
+	housing_material.emission_enabled = true
+	housing_material.emission = Color("#f5d9a3") * 0.48
+	housing.material_override = housing_material
+	lamp_root.add_child(housing)
+
+	street_lamp_count += 1
 
 func _add_multimesh_batch(mesh_size: Vector3, transforms: Array[Transform3D], color: Color, roughness: float = 0.88) -> void:
 	if transforms.is_empty():
