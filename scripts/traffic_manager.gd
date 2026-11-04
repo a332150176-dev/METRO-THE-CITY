@@ -3,6 +3,7 @@ class_name TrafficManager
 
 const CAR_SCRIPT := preload("res://scripts/traffic_car.gd")
 const PEDESTRIAN_SCRIPT := preload("res://scripts/pedestrian.gd")
+const VEHICLE_MODEL_NAMES := ["sedan", "suv", "van", "taxi", "police", "ambulance", "firetruck", "delivery"]
 
 var rng := RandomNumberGenerator.new()
 var network: RoadNetwork
@@ -14,7 +15,8 @@ var simulation_clock: float = 0.0
 var player_tracker: Node3D
 var simulation_radius: float = 190.0
 var target_car_count: int = 14
-var vehicle_types: Array[String] = ["sedan", "suv", "van", "taxi"]
+var vehicle_types: Array[String] = ["sedan", "suv", "van", "taxi", "sedan", "suv", "sedan", "delivery", "police"]
+var vehicle_scenes: Dictionary = {}
 var car_colors: Array[Color] = [
 	Color("#24799a"), Color("#c2c6c5"), Color("#b64d3b"),
 	Color("#d4a843"), Color("#343b43"), Color("#6d8a6f")
@@ -28,9 +30,44 @@ func configure(road_network: RoadNetwork, controller: TrafficController) -> void
 	network = road_network
 	lights = controller
 	rng.seed = 884422
+	_load_vehicle_models()
 	for i in range(target_car_count):
 		_spawn_one_car(i)
 	_spawn_pedestrians(24)
+
+func _load_vehicle_models() -> void:
+	vehicle_scenes.clear()
+	for model_name_value in VEHICLE_MODEL_NAMES:
+		var model_name := str(model_name_value)
+		var asset_path := "res://assets/vehicles/%s.glb.b64" % model_name
+		if not FileAccess.file_exists(asset_path):
+			continue
+		var encoded := FileAccess.get_file_as_string(asset_path).strip_edges()
+		if encoded.is_empty():
+			continue
+		var binary := Marshalls.base64_to_raw(encoded)
+		var document := GLTFDocument.new()
+		var state := GLTFState.new()
+		var parse_error := document.append_from_buffer(binary, "res://assets/vehicles/", state, 0)
+		if parse_error != OK:
+			push_warning("Could not load vehicle model %s: %s" % [model_name, error_string(parse_error)])
+			continue
+		var model_scene := document.generate_scene(state)
+		if model_scene == null:
+			continue
+		var packed := PackedScene.new()
+		var pack_error := packed.pack(model_scene)
+		if pack_error == OK:
+			vehicle_scenes[model_name] = packed
+		else:
+			push_warning("Could not pack vehicle model %s: %s" % [model_name, error_string(pack_error)])
+		model_scene.free()
+
+func get_vehicle_scene(model_name: String) -> PackedScene:
+	var requested := model_name
+	if not vehicle_scenes.has(requested):
+		requested = "sedan"
+	return vehicle_scenes.get(requested) as PackedScene
 
 func set_player_tracker(player_node: Node3D) -> void:
 	player_tracker = player_node
