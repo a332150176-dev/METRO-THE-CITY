@@ -1,6 +1,8 @@
 extends CharacterBody3D
 class_name TrafficCar
 
+signal crime_committed(severity: int)
+
 var body_length: float = 4.2
 var body_width: float = 1.85
 var vehicle_type: String = "sedan"
@@ -24,6 +26,10 @@ var wheel_meshes: Array[MeshInstance3D] = []
 var pursuit_target: Node3D
 var pursuit_route_clock: float = 0.0
 var pursuit_lane: float = 3.1
+var siren_clock: float = 0.0
+var siren_red: MeshInstance3D
+var siren_blue: MeshInstance3D
+var collision_crime_cooldown: float = 0.0
 
 func setup(network: RoadNetwork, controller: TrafficController, start_id: int, goal_id: int, color: Color, lane: float = 3.1, manager: TrafficManager = null, type: String = "sedan") -> void:
 	route_network = network
@@ -202,6 +208,8 @@ func _build_vehicle() -> void:
 			authored_model.rotation.y = PI
 			visual.add_child(authored_model)
 			_collect_authored_wheels(authored_model)
+			if vehicle_type == "police":
+				_add_police_lightbar(visual)
 			return
 
 	var body_material := _paint(paint_color, 0.42, 0.22)
@@ -296,6 +304,35 @@ func _build_vehicle() -> void:
 		_add_box(visual, Vector3(0.42, 0.035, 0.23), Vector3(0.0, roof_y + 0.24, 0.0), Color("#fff1a5"), 0.3, 0.0)
 	if vehicle_type == "van":
 		_add_box(visual, Vector3(0.05, 0.52, 0.04), Vector3(0.0, 1.39, 1.62), paint_color.darkened(0.13), 0.6, 0.0)
+	if vehicle_type == "police":
+		_add_police_lightbar(visual)
+
+func _add_police_lightbar(parent: Node3D) -> void:
+	var lightbar := Node3D.new()
+	lightbar.name = "PoliceLightbar"
+	parent.add_child(lightbar)
+	_add_box(lightbar, Vector3(0.78, 0.075, 0.22), Vector3.ZERO, Color("#202a31"), 0.38, 0.15)
+	siren_red = _add_box(lightbar, Vector3(0.27, 0.16, 0.20), Vector3(-0.22, 0.115, 0.0), Color("#e12b35"), 0.2, 0.0)
+	siren_red.name = "RedLamp"
+	siren_blue = _add_box(lightbar, Vector3(0.27, 0.16, 0.20), Vector3(0.22, 0.115, 0.0), Color("#2676e8"), 0.2, 0.0)
+	siren_blue.name = "BlueLamp"
+	for lamp in [siren_red, siren_blue]:
+		var material := lamp.material_override as StandardMaterial3D
+		material.emission_enabled = true
+		material.emission = material.albedo_color * 1.9
+		lamp.visible = false
+
+func _update_police_siren(delta: float) -> void:
+	if vehicle_type != "police" or not is_instance_valid(siren_red) or not is_instance_valid(siren_blue):
+		return
+	if pursuit_target == null or not is_instance_valid(pursuit_target):
+		siren_red.visible = false
+		siren_blue.visible = false
+		return
+	siren_clock += delta
+	var red_active := fposmod(siren_clock, 0.32) < 0.16
+	siren_red.visible = red_active
+	siren_blue.visible = not red_active
 
 func begin_pursuit(target: Node3D) -> void:
 	pursuit_target = target
@@ -388,7 +425,8 @@ func exit_vehicle() -> void:
 	route_index = 1
 	speed = 0.0
 
-func _physics_process(delta: float) -> void:
+	# Animate emergency lights only on active pursuit vehicles.
+	_update_police_siren(delta)
 	for wheel in wheel_meshes:
 		if is_instance_valid(wheel):
 			wheel.rotation.x -= speed * delta / 0.34
@@ -451,7 +489,23 @@ func _physics_process(delta: float) -> void:
 		rotation.y = lerp_angle(rotation.y, atan2(-direction.x, -direction.z), minf(1.0, delta * 4.0))
 	move_and_slide()
 
+func _report_driving_collision() -> void:
+	if collision_crime_cooldown > 0.0 or absf(speed) < 1.5:
+		return
+	for index in range(get_slide_collision_count()):
+		var collider: Object = get_slide_collision(index).get_collider()
+		var severity := 0
+		if collider is CityPedestrian:
+			severity = 2
+		elif collider is TrafficCar and collider != self:
+			severity = 1
+		if severity > 0:
+			crime_committed.emit(severity)
+			collision_crime_cooldown = 2.8
+			return
+
 func _drive_player(delta: float) -> void:
+	collision_crime_cooldown = maxf(0.0, collision_crime_cooldown - delta)
 	var input_vector := Input.get_vector("move_left", "move_right", "move_back", "move_forward")
 	if driving_joystick != null and driving_joystick.value.length() > 0.08:
 		input_vector = driving_joystick.value
@@ -469,3 +523,4 @@ func _drive_player(delta: float) -> void:
 	velocity = forward * speed
 	velocity.y = 0.0
 	move_and_slide()
+	_report_driving_collision()
