@@ -17,6 +17,7 @@ var sprint_button: Button
 var action_button: Button
 var minimap: CityMiniMap
 var context_label: Label
+var wanted_label: Label
 
 func show_character_selection() -> void:
 	selected_character = GameState.selected_character
@@ -126,6 +127,16 @@ func show_gameplay() -> void:
 	context_label.add_theme_constant_override("shadow_offset_y", 1)
 	root.add_child(context_label)
 
+	wanted_label = Label.new()
+	wanted_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	wanted_label.position = Vector2(-236.0, 192.0)
+	wanted_label.size = Vector2(220.0, 34.0)
+	wanted_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	wanted_label.add_theme_font_size_override("font_size", 22)
+	wanted_label.add_theme_color_override("font_color", Color("#f2b44a"))
+	root.add_child(wanted_label)
+	set_wanted_level(0)
+
 	joystick = TouchJoystick.new()
 	joystick.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	joystick.position = Vector2(24.0, -190.0)
@@ -176,6 +187,15 @@ func set_action_label(value: String) -> void:
 	if action_button != null and action_button.text != value:
 		action_button.text = value
 
+
+func set_wanted_level(level: int) -> void:
+	if wanted_label == null:
+		return
+	var stars := ""
+	for index in range(5):
+		stars += "★" if index < clampi(level, 0, 5) else "☆"
+	wanted_label.text = "מבוקש  " + stars
+	wanted_label.visible = level > 0
 
 func set_context_message(message: String) -> void:
 	if context_label != null:
