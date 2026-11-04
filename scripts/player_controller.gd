@@ -16,6 +16,11 @@ var camera_pivot: Node3D
 var visual_root: Node3D
 var look_touch_index: int = -1
 var mouse_look_active: bool = false
+var left_arm: Node3D
+var right_arm: Node3D
+var left_leg: Node3D
+var right_leg: Node3D
+var walk_phase: float = 0.0
 
 func _ready() -> void:
 	_build_body()
@@ -38,11 +43,56 @@ func request_jump() -> void:
 func request_interaction() -> void:
 	interaction_requested.emit()
 
+func _new_material(color: Color, roughness: float = 0.9) -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = roughness
+	return material
+
+func _make_capsule(parent: Node3D, node_name: String, radius: float, height: float, color: Color, offset: Vector3) -> MeshInstance3D:
+	var instance := MeshInstance3D.new()
+	instance.name = node_name
+	var mesh := CapsuleMesh.new()
+	mesh.radius = radius
+	mesh.height = height
+	mesh.radial_segments = 12
+	mesh.rings = 5
+	instance.mesh = mesh
+	instance.position = offset
+	instance.material_override = _new_material(color)
+	parent.add_child(instance)
+	return instance
+
+func _make_sphere(parent: Node3D, node_name: String, radius: float, color: Color, offset: Vector3, stretch: Vector3 = Vector3.ONE) -> MeshInstance3D:
+	var instance := MeshInstance3D.new()
+	instance.name = node_name
+	var mesh := SphereMesh.new()
+	mesh.radius = radius
+	mesh.height = radius * 2.0
+	mesh.radial_segments = 16
+	mesh.rings = 10
+	instance.mesh = mesh
+	instance.position = offset
+	instance.scale = stretch
+	instance.material_override = _new_material(color)
+	parent.add_child(instance)
+	return instance
+
+func _make_shoe(parent: Node3D, node_name: String, offset: Vector3) -> void:
+	var shoe := MeshInstance3D.new()
+	shoe.name = node_name
+	var mesh := BoxMesh.new()
+	mesh.size = Vector3(0.19, 0.13, 0.34)
+	shoe.mesh = mesh
+	shoe.position = offset
+	shoe.material_override = _new_material(Color("#25282d"), 0.72)
+	parent.add_child(shoe)
+
 func _build_body() -> void:
 	var collider := CollisionShape3D.new()
 	var capsule := CapsuleShape3D.new()
-	capsule.radius = 0.42
-	capsule.height = 1.85
+	capsule.radius = 0.36
+	capsule.height = 1.86
 	collider.shape = capsule
 	collider.position.y = 0.93
 	add_child(collider)
@@ -51,54 +101,65 @@ func _build_body() -> void:
 	visual_root.name = "CharacterVisual"
 	add_child(visual_root)
 
-	var torso := MeshInstance3D.new()
-	var torso_mesh := CapsuleMesh.new()
-	torso_mesh.radius = 0.39
-	torso_mesh.height = 1.18
-	torso.mesh = torso_mesh
-	torso.position.y = 1.0
-	visual_root.add_child(torso)
+	_make_capsule(visual_root, "Torso", 0.235, 0.88, Color("#2876a8"), Vector3(0.0, 1.08, 0.0))
+	_make_capsule(visual_root, "Pelvis", 0.18, 0.34, Color("#303947"), Vector3(0.0, 0.64, 0.0))
+	_make_capsule(visual_root, "Neck", 0.075, 0.17, Color("#d9a27d"), Vector3(0.0, 1.57, 0.0))
+	_make_sphere(visual_root, "Head", 0.16, Color("#d9a27d"), Vector3(0.0, 1.78, 0.0), Vector3(0.95, 1.08, 0.95))
+	_make_sphere(visual_root, "Hair", 0.163, Color("#29231f"), Vector3(0.0, 1.89, 0.015), Vector3(1.0, 0.48, 1.0))
+	_make_sphere(visual_root, "EarLeft", 0.045, Color("#d9a27d"), Vector3(-0.155, 1.77, 0.0))
+	_make_sphere(visual_root, "EarRight", 0.045, Color("#d9a27d"), Vector3(0.155, 1.77, 0.0))
 
-	var head := MeshInstance3D.new()
-	var head_mesh := SphereMesh.new()
-	head_mesh.radius = 0.23
-	head_mesh.height = 0.46
-	head.mesh = head_mesh
-	head.position.y = 1.78
-	var skin_material := StandardMaterial3D.new()
-	skin_material.albedo_color = Color("#d6a07c")
-	head.material_override = skin_material
-	visual_root.add_child(head)
+	left_arm = Node3D.new()
+	left_arm.name = "LeftArm"
+	left_arm.position = Vector3(-0.27, 1.34, 0.0)
+	visual_root.add_child(left_arm)
+	_make_capsule(left_arm, "Sleeve", 0.095, 0.62, Color("#2876a8"), Vector3(0.0, -0.29, 0.0))
+	_make_sphere(left_arm, "Hand", 0.075, Color("#d9a27d"), Vector3(0.0, -0.63, -0.015))
 
-	var legs := MeshInstance3D.new()
-	var legs_mesh := BoxMesh.new()
-	legs_mesh.size = Vector3(0.54, 0.56, 0.32)
-	legs.mesh = legs_mesh
-	legs.position.y = 0.34
-	var pants_material := StandardMaterial3D.new()
-	pants_material.albedo_color = Color("#303947")
-	legs.material_override = pants_material
-	visual_root.add_child(legs)
+	right_arm = Node3D.new()
+	right_arm.name = "RightArm"
+	right_arm.position = Vector3(0.27, 1.34, 0.0)
+	visual_root.add_child(right_arm)
+	_make_capsule(right_arm, "Sleeve", 0.095, 0.62, Color("#2876a8"), Vector3(0.0, -0.29, 0.0))
+	_make_sphere(right_arm, "Hand", 0.075, Color("#d9a27d"), Vector3(0.0, -0.63, -0.015))
+
+	left_leg = Node3D.new()
+	left_leg.name = "LeftLeg"
+	left_leg.position = Vector3(-0.115, 0.62, 0.0)
+	visual_root.add_child(left_leg)
+	_make_capsule(left_leg, "TrouserLeg", 0.105, 0.67, Color("#303947"), Vector3(0.0, -0.29, 0.0))
+	_make_shoe(left_leg, "Shoe", Vector3(0.0, -0.61, -0.055))
+
+	right_leg = Node3D.new()
+	right_leg.name = "RightLeg"
+	right_leg.position = Vector3(0.115, 0.62, 0.0)
+	visual_root.add_child(right_leg)
+	_make_capsule(right_leg, "TrouserLeg", 0.105, 0.67, Color("#303947"), Vector3(0.0, -0.29, 0.0))
+	_make_shoe(right_leg, "Shoe", Vector3(0.0, -0.61, -0.055))
 	_apply_character_appearance()
 
 func _apply_character_appearance() -> void:
 	if visual_root == null:
 		return
 	var data := CharacterCatalog.get_character(character_id)
-	var torso := visual_root.get_node_or_null("Torso") as MeshInstance3D
-	if torso == null:
-		torso = visual_root.get_child(0) as MeshInstance3D
-	var head := visual_root.get_child(1) as MeshInstance3D
-	var legs := visual_root.get_child(2) as MeshInstance3D
-	var shirt_material := StandardMaterial3D.new()
-	shirt_material.albedo_color = data["shirt"]
-	torso.material_override = shirt_material
-	var skin_material := StandardMaterial3D.new()
-	skin_material.albedo_color = data["skin"]
-	head.material_override = skin_material
-	var pants_material := StandardMaterial3D.new()
-	pants_material.albedo_color = data["pants"]
-	legs.material_override = pants_material
+	var shirt: Color = data["shirt"]
+	var skin: Color = data["skin"]
+	var pants: Color = data["pants"]
+	var shirt_material := _new_material(shirt)
+	var pants_material := _new_material(pants)
+	var skin_material := _new_material(skin)
+	for path in ["Torso", "LeftArm/Sleeve", "RightArm/Sleeve"]:
+		var part := visual_root.get_node_or_null(path) as MeshInstance3D
+		if part != null:
+			part.material_override = shirt_material
+	for path in ["Pelvis", "LeftLeg/TrouserLeg", "RightLeg/TrouserLeg"]:
+		var part := visual_root.get_node_or_null(path) as MeshInstance3D
+		if part != null:
+			part.material_override = pants_material
+	for path in ["Head", "Neck", "EarLeft", "EarRight", "LeftArm/Hand", "RightArm/Hand"]:
+		var part := visual_root.get_node_or_null(path) as MeshInstance3D
+		if part != null:
+			part.material_override = skin_material
 
 func _build_camera() -> void:
 	camera_pivot = Node3D.new()
@@ -141,6 +202,19 @@ func _physics_process(delta: float) -> void:
 	if direction.length_squared() > 0.01:
 		var target_angle := atan2(-direction.x, -direction.z)
 		visual_root.rotation.y = lerp_angle(visual_root.rotation.y, target_angle, minf(1.0, delta * 9.0))
+		walk_phase += delta * (12.0 if sprinting else 8.5)
+		var stride := 0.62 if sprinting else 0.42
+		left_arm.rotation.x = sin(walk_phase) * stride
+		right_arm.rotation.x = -sin(walk_phase) * stride
+		left_leg.rotation.x = -sin(walk_phase) * stride
+		right_leg.rotation.x = sin(walk_phase) * stride
+		visual_root.position.y = absf(sin(walk_phase * 2.0)) * (0.035 if sprinting else 0.02)
+	else:
+		left_arm.rotation.x = move_toward(left_arm.rotation.x, 0.0, delta * 3.0)
+		right_arm.rotation.x = move_toward(right_arm.rotation.x, 0.0, delta * 3.0)
+		left_leg.rotation.x = move_toward(left_leg.rotation.x, 0.0, delta * 3.0)
+		right_leg.rotation.x = move_toward(right_leg.rotation.x, 0.0, delta * 3.0)
+		visual_root.position.y = move_toward(visual_root.position.y, 0.0, delta * 0.2)
 
 	move_and_slide()
 
