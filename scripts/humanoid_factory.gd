@@ -66,7 +66,7 @@ func create_character(character_id: String = "noam") -> Node3D:
 	_attach_part(body_instance, skeleton, "boots")
 	_hide_covered_skin(body_instance)
 
-	var animation_source := packed_scenes["movement"].instantiate()
+	var animation_source: Node = (packed_scenes["movement"] as PackedScene).instantiate()
 	var source_player := _find_animation_player(animation_source)
 	if source_player != null:
 		source_player.reparent(body_instance)
@@ -90,7 +90,7 @@ func create_character(character_id: String = "noam") -> Node3D:
 func _attach_part(body_root: Node3D, body_skeleton: Skeleton3D, part_key: String) -> void:
 	if not packed_scenes.has(part_key):
 		return
-	var part_root := packed_scenes[part_key].instantiate()
+	var part_root: Node = (packed_scenes[part_key] as PackedScene).instantiate()
 	if part_root == null:
 		return
 	var part_skeleton := _find_skeleton(part_root)
