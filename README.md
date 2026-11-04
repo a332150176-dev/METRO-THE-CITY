@@ -1,19 +1,35 @@
 # METRO: THE CITY
 
-Godot 4 Android game project. The intended engine version is Godot 4.3 or newer, with the Compatibility renderer (OpenGL ES 3).
+A third-person 3D Android action/adventure game built with Godot 4.3+, using the Compatibility renderer (OpenGL ES 3) for mobile hardware.
 
-## Restoring the V10 source
+## Open the playable source
 
-The original V10 project archive is transferred as ten ordered Base64 fragments in `.source_transfer/part-01.txt` through `.source_transfer/part-10.txt`.
+Open the repository root in Godot 4.3 or newer by opening `project.godot`.
 
-The restoration tool is:
+The current reconstructed gameplay baseline includes:
+- A procedural Tel Aviv-inspired 3D city with a 3×3 intersection grid, roads, sidewalks, buildings, crosswalks, street furniture and traffic lights.
+- Destination-based routing between intersections, including curved paths for turns.
+- AI traffic that obeys traffic-light phases, follows other vehicles and attempts lane changes/overtakes when the adjacent lane is clear.
+- Pedestrians moving along sidewalk routes.
+- Third-person player movement, three selectable character profiles and on-screen Android touch controls.
+- A starter campaign with objectives, rewards, money and reputation.
+
+The scene uses procedural geometry and intentionally modest rendering settings as a first playable baseline for the M36 Plus target. The source here is a reconstruction from the established V10 design requirements; the original V10 archive is still being transferred and has not yet been verified as restored.
+
+## Validation
+
+GitHub Actions runs a headless Godot import and a gameplay smoke test when the game source changes.
+
+## Original V10 archive
+
+The original source ZIP is transferred in ten ordered parts. Parts may be stored as one `.txt` file or as numbered sub-fragments (for example, `.source_transfer/part-09-01.txt`).
+
+To validate and restore the complete archive locally:
 
 ```bash
 python tools/restore_source_archive.py
 ```
 
-It validates that all ten fragments exist, checks the Base64 data and ZIP CRCs, verifies that `project.godot` is present, and rejects unsafe archive paths before extracting anything into the repository.
+The script checks that all ten parts are present, joins their sub-fragments in numeric order, validates Base64 and ZIP integrity, confirms `project.godot` is present, and rejects unsafe paths before extraction.
 
-A GitHub Actions workflow named **Restore V10 source archive** runs when a transfer fragment is pushed. It can also be started manually from the repository's **Actions** tab. After a successful restore, the workflow commits the Godot source files to the default branch.
-
-The game source is not considered restored until the workflow completes successfully and `project.godot` appears in the repository root.
+The **Restore V10 source archive** GitHub Actions workflow also runs when a transfer file is pushed. The original V10 archive is not considered restored until the workflow completes successfully and its source files have been committed.

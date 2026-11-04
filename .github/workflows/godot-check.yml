@@ -1,0 +1,31 @@
+name: Godot project validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "project.godot"
+      - "scenes/**"
+      - "scripts/**"
+      - ".github/workflows/godot-check.yml"
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.3
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Import project and validate scripts
+        run: godot --headless --editor --path . --quit
+
+      - name: Run gameplay smoke test
+        run: godot --headless --path . --script res://scripts/smoke_test.gd

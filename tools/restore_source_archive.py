@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Safely restore the original METRO: THE CITY V10 source ZIP.
 
-The archive is stored as nine ordered Base64 text fragments in .source_transfer.
-This script deliberately refuses to extract an incomplete, duplicated, or invalid
-archive so a damaged transfer can never overwrite the working project.
+The transfer may store a numbered fragment as one file or as ordered sub-fragments.
+No extraction occurs unless the joined archive is complete and passes ZIP validation.
 """
 from __future__ import annotations
 
@@ -11,9 +10,11 @@ import base64
 import binascii
 import hashlib
 import io
+import re
 import sys
 import zipfile
 from pathlib import Path, PurePosixPath
+from typing import NoReturn
 
 ROOT = Path(__file__).resolve().parents[1]
 TRANSFER_DIR = ROOT / ".source_transfer"
@@ -21,42 +22,64 @@ PART_COUNT = 10
 MAX_UNCOMPRESSED_BYTES = 256 * 1024 * 1024
 
 
-def fail(message: str) -> "NoReturn":
+def fail(message: str) -> NoReturn:
     print(f"[restore] ERROR: {message}", file=sys.stderr)
     raise SystemExit(1)
 
 
-def main() -> None:
-    fragments: list[str] = []
-    missing: list[str] = []
-    hashes: dict[str, str] = {}
+def read_fragment(number: int) -> str:
+    stem = f"part-{number:02d}"
+    whole_path = TRANSFER_DIR / f"{stem}.txt"
+    if whole_path.is_file():
+        return whole_path.read_text(encoding="ascii").strip()
 
-    for number in range(1, PART_COUNT + 1):
-        path = TRANSFER_DIR / f"part-{number:02d}.txt"
-        if not path.is_file():
-            missing.append(path.name)
-            continue
+    segment_pattern = re.compile(rf"^{re.escape(stem)}-(\d+)\.txt$")
+    segments: list[tuple[int, Path]] = []
+    for path in TRANSFER_DIR.glob(f"{stem}-*.txt"):
+        match = segment_pattern.match(path.name)
+        if match:
+            segments.append((int(match.group(1)), path))
+    if not segments:
+        fail(f"missing fragment {stem}.txt (or its numbered sub-fragments)")
+
+    segments.sort(key=lambda item: item[0])
+    numbers = [item[0] for item in segments]
+    expected = list(range(1, numbers[-1] + 1))
+    if numbers != expected:
+        missing = sorted(set(expected) - set(numbers))
+        fail(f"{stem} has missing sub-fragment numbers: {missing}")
+
+    content = []
+    for _, path in segments:
         try:
-            content = path.read_text(encoding="ascii").strip()
+            content.append(path.read_text(encoding="ascii").strip())
         except (UnicodeError, OSError) as exc:
             fail(f"cannot read {path.name}: {exc}")
-        if not content:
-            fail(f"{path.name} is empty")
-        digest = hashlib.sha256(content.encode("ascii")).hexdigest()
-        if digest in hashes:
+    return "".join(content)
+
+
+def main() -> None:
+    fragments: list[str] = []
+    seen_hashes: dict[str, str] = {}
+
+    for number in range(1, PART_COUNT + 1):
+        try:
+            fragment = read_fragment(number)
+        except (UnicodeError, OSError) as exc:
+            fail(f"cannot read fragment {number:02d}: {exc}")
+        if not fragment:
+            fail(f"fragment {number:02d} is empty")
+        digest = hashlib.sha256(fragment.encode("ascii")).hexdigest()
+        if digest in seen_hashes:
             fail(
-                f"{path.name} is an exact duplicate of {hashes[digest]}; "
+                f"fragment {number:02d} duplicates {seen_hashes[digest]}; "
                 "the transfer would produce a corrupted ZIP"
             )
-        hashes[digest] = path.name
-        fragments.append(content)
+        seen_hashes[digest] = f"part-{number:02d}"
+        fragments.append(fragment)
 
-    if missing:
-        fail("missing fragment(s): " + ", ".join(missing))
-
-    encoded = "".join(fragments)
     try:
-        archive_bytes = base64.b64decode(encoded, validate=True)
+        archive_bytes = base64.b64decode("".join(fragments), validate=True)
     except (binascii.Error, ValueError) as exc:
         fail(f"the joined fragments are not valid Base64: {exc}")
 
