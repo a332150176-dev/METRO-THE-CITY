@@ -210,7 +210,7 @@ func _build_vehicle() -> void:
 	var window_top := roof_y - 0.16
 	var window_bottom := 1.17
 	for side in [-1.0, 1.0]:
-		var x := side * side_x
+		var x: float = side * side_x
 		var front_window: Array[Vector3] = [
 			Vector3(x, window_top, front_z + 0.10),
 			Vector3(x, window_top, -0.12),
@@ -225,7 +225,7 @@ func _build_vehicle() -> void:
 			Vector3(x, window_bottom, 0.30)
 		]
 		_add_quad(visual, rear_window[0], rear_window[1], rear_window[2], rear_window[3], glass_material)
-		_add_box(visual, Vector3(0.035, 0.055, 0.12), Vector3(side * (body_width * 0.5), 0.83, -0.08), chrome_material, 0.3, 0.65)
+		_add_box(visual, Vector3(0.035, 0.055, 0.12), Vector3(side * (body_width * 0.5), 0.83, -0.08), Color("#aeb9bd"), 0.3, 0.65)
 
 	# Windshield and rear glass follow the sloped roof line.
 	_add_quad(visual,
@@ -242,10 +242,10 @@ func _build_vehicle() -> void:
 		glass_material)
 
 	# Bumpers, grille, registration plates and lighting.
-	_add_box(visual, Vector3(body_width * 0.92, 0.16, 0.12), Vector3(0.0, 0.42, -body_length * 0.49), dark_material)
+	_add_box(visual, Vector3(body_width * 0.92, 0.16, 0.12), Vector3(0.0, 0.42, -body_length * 0.49), Color("#252b30"))
 	_add_box(visual, Vector3(body_width * 0.92, 0.16, 0.12), Vector3(0.0, 0.42, body_length * 0.49), dark_material)
 	_add_box(visual, Vector3(0.62, 0.19, 0.035), Vector3(0.0, 0.62, -body_length * 0.505), dark_material)
-	_add_box(visual, Vector3(0.42, 0.10, 0.025), Vector3(0.0, 0.51, -body_length * 0.52), chrome_material)
+	_add_box(visual, Vector3(0.42, 0.10, 0.025), Vector3(0.0, 0.51, -body_length * 0.52), Color("#aeb9bd"))
 	for side in [-1.0, 1.0]:
 		var headlight := _add_box(visual, Vector3(0.34, 0.14, 0.045), Vector3(side * body_width * 0.34, 0.76, -body_length * 0.49), Color("#f5e8bd"), 0.24, 0.08)
 		var lamp_material := headlight.material_override as StandardMaterial3D
@@ -258,7 +258,7 @@ func _build_vehicle() -> void:
 	for side in [-1.0, 1.0]:
 		for axle in [-body_length * 0.30, body_length * 0.30]:
 			_add_wheel(visual, side, axle)
-		_add_box(visual, Vector3(0.08, 0.07, 0.22), Vector3(side * body_width * 0.50, 0.82, 0.16), chrome_material, 0.3, 0.7)
+		_add_box(visual, Vector3(0.08, 0.07, 0.22), Vector3(side * body_width * 0.50, 0.82, 0.16), Color("#aeb9bd"), 0.3, 0.7)
 
 	_add_box(visual, Vector3(body_width * 0.84, 0.045, 0.07), Vector3(0.0, roof_y + 0.02, 0.0), paint_color.lightened(0.08), 0.36, 0.18)
 	if vehicle_type == "taxi":
