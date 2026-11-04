@@ -215,7 +215,7 @@ func _load_suburban_models() -> void:
 		var binary := Marshalls.base64_to_raw(encoded)
 		var document := GLTFDocument.new()
 		var state := GLTFState.new()
-		var parse_error := document.append_from_buffer(binary, "res://assets/city_models/", 0, state)
+		var parse_error := document.append_from_buffer(binary, "res://assets/city_models/", state, 0)
 		if parse_error != OK:
 			push_warning("Could not load suburban model %s: %s" % [letter, error_string(parse_error)])
 			continue
