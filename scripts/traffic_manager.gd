@@ -17,7 +17,7 @@ var spawn_clock: float = 0.0
 var simulation_clock: float = 0.0
 var player_tracker: Node3D
 var simulation_radius: float = 190.0
-var target_car_count: int = 18
+var target_car_count: int = 24
 var vehicle_types: Array[String] = ["sedan", "suv", "sedan", "van", "sedan", "taxi", "sedan", "suv", "sedan", "delivery", "sedan", "police", "sedan", "ambulance", "sedan", "van", "sedan", "suv", "sedan", "taxi", "sedan", "sedan", "firetruck", "sedan"]
 var vehicle_scenes: Dictionary = {}
 var car_colors: Array[Color] = [
@@ -37,7 +37,7 @@ func configure(road_network: RoadNetwork, controller: TrafficController, charact
 	_load_vehicle_models()
 	for i in range(target_car_count):
 		_spawn_one_car(i)
-	_spawn_pedestrians(32)
+	_spawn_pedestrians(48)
 
 func _load_vehicle_models() -> void:
 	vehicle_scenes.clear()
