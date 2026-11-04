@@ -2,10 +2,10 @@ extends Node3D
 class_name CityBuilder
 
 const LIGHT_VISUAL := preload("res://scripts/traffic_light_visual.gd")
-const GRID_SIZE: int = 5
+const GRID_SIZE: int = 7
 const GRID_SPACING: float = 76.0
 const ROAD_WIDTH: float = 18.0
-const CITY_EDGE: float = 420.0
+const CITY_EDGE: float = 610.0
 
 var rng := RandomNumberGenerator.new()
 var traffic_controller: TrafficController
@@ -68,12 +68,12 @@ func _visual_box(parent: Node3D, size: Vector3, position: Vector3, color: Color)
 	return instance
 
 func _build_ground() -> void:
-	_box(self, Vector3(460.0, 1.0, 460.0), Vector3(0.0, -0.5, 0.0), Color("#777d78"), true)
-	_box(self, Vector3(430.0, 0.05, 430.0), Vector3(0.0, 0.02, 0.0), Color("#777e7b"))
+	_box(self, Vector3(640.0, 1.0, 640.0), Vector3(0.0, -0.5, 0.0), Color("#777d78"), true)
+	_box(self, Vector3(610.0, 0.05, 610.0), Vector3(0.0, 0.02, 0.0), Color("#777e7b"))
 
 func _build_roads() -> void:
 	for grid in range(GRID_SIZE):
-		var coordinate := (grid - 2) * GRID_SPACING
+		var coordinate := (float(grid) - float(GRID_SIZE - 1) * 0.5) * GRID_SPACING
 		_box(self, Vector3(CITY_EDGE, 0.13, ROAD_WIDTH), Vector3(0.0, -0.01, coordinate), Color("#30343a"))
 		_box(self, Vector3(ROAD_WIDTH, 0.13, CITY_EDGE), Vector3(coordinate, -0.005, 0.0), Color("#292e34"))
 		_box(self, Vector3(CITY_EDGE, 0.12, 3.5), Vector3(0.0, 0.0, coordinate - 10.9), Color("#8e9692"))
@@ -81,8 +81,9 @@ func _build_roads() -> void:
 		_box(self, Vector3(3.5, 0.12, CITY_EDGE), Vector3(coordinate - 10.9, 0.0, 0.0), Color("#aaa99d"))
 		_box(self, Vector3(3.5, 0.12, CITY_EDGE), Vector3(coordinate + 10.9, 0.0, 0.0), Color("#aaa99d"))
 
-		for mark in range(35):
-			var along := -204.0 + mark * 12.0
+		var marking_count := int(ceil(CITY_EDGE / 12.0))
+		for mark in range(marking_count):
+			var along := -CITY_EDGE * 0.5 + 6.0 + float(mark) * 12.0
 			road_mark_x_transforms.append(Transform3D(Basis(), Vector3(along, 0.075, coordinate)))
 			road_mark_z_transforms.append(Transform3D(Basis(), Vector3(coordinate, 0.075, along)))
 
@@ -102,10 +103,12 @@ func _build_blocks() -> void:
 
 	for block_x in range(GRID_SIZE - 1):
 		for block_z in range(GRID_SIZE - 1):
-			var center_x := (float(block_x) - 1.5) * GRID_SPACING
-			var center_z := (float(block_z) - 1.5) * GRID_SPACING
-			var downtown := block_x >= 1 and block_x <= 2 and block_z >= 1 and block_z <= 2
-			var mixed := not downtown and (block_x == 1 or block_x == 2 or block_z == 1 or block_z == 2)
+			var block_center_offset := float(GRID_SIZE - 2) * 0.5
+			var center_x := (float(block_x) - block_center_offset) * GRID_SPACING
+			var center_z := (float(block_z) - block_center_offset) * GRID_SPACING
+			var district_center := int((GRID_SIZE - 2) / 2)
+			var downtown := block_x >= district_center and block_x <= district_center + 1 and block_z >= district_center and block_z <= district_center + 1
+			var mixed := not downtown and (block_x == district_center or block_x == district_center + 1 or block_z == district_center or block_z == district_center + 1)
 			var palette: Array[Color] = downtown_colors if downtown else (mixed_colors if mixed else residential_colors)
 
 			for offset_x in [-14.0, 14.0]:
@@ -119,7 +122,7 @@ func _build_blocks() -> void:
 						height = rng.randf_range(34.0, 56.0)
 					var position := Vector3(center_x + offset_x, height * 0.5 - 0.05, center_z + offset_z)
 					var color: Color = palette[rng.randi_range(0, palette.size() - 1)]
-					var is_minimarket_lot := block_x == 1 and block_z == 1 and is_equal_approx(float(offset_x), -14.0) and is_equal_approx(float(offset_z), -14.0)
+					var is_minimarket_lot := block_x == int((GRID_SIZE - 2) / 2) and block_z == int((GRID_SIZE - 2) / 2) and is_equal_approx(float(offset_x), -14.0) and is_equal_approx(float(offset_z), -14.0)
 					if not is_minimarket_lot:
 						_add_building(Vector3(width, height, depth), position, color, downtown)
 
@@ -206,7 +209,8 @@ func _add_bench(position: Vector3) -> void:
 func _build_intersections() -> void:
 	for x in range(GRID_SIZE):
 		for z in range(GRID_SIZE):
-			var center := Vector3((x - 2) * GRID_SPACING, 0.0, (z - 2) * GRID_SPACING)
+			var grid_center_offset := float(GRID_SIZE - 1) * 0.5
+			var center := Vector3((float(x) - grid_center_offset) * GRID_SPACING, 0.0, (float(z) - grid_center_offset) * GRID_SPACING)
 			for stripe in range(6):
 				var offset := -6.0 + stripe * 2.4
 				crosswalk_z_transforms.append(Transform3D(Basis(), center + Vector3(offset, 0.09, -12.2)))
