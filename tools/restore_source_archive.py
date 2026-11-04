@@ -17,7 +17,7 @@ from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parents[1]
 TRANSFER_DIR = ROOT / ".source_transfer"
-PART_COUNT = 9
+PART_COUNT = 10
 MAX_UNCOMPRESSED_BYTES = 256 * 1024 * 1024
 
 
