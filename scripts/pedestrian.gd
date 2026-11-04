@@ -11,7 +11,7 @@ func setup(points: PackedVector3Array, color: Color) -> void:
 	waypoints = points
 	shirt_color = color
 	if waypoints.size() > 0:
-		global_position = waypoints[0]
+		position = waypoints[0]
 		waypoint_index = 1 if waypoints.size() > 1 else 0
 	_build_person()
 

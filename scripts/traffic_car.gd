@@ -27,7 +27,7 @@ func setup(network: RoadNetwork, controller: TrafficController, start_id: int, g
 	paint_color = color
 	route = network.build_route(start_id, goal_id, lane)
 	if route.size() > 0:
-		global_position = route[0]
+		position = route[0]
 	_build_vehicle()
 
 func _ready() -> void:
