@@ -82,6 +82,20 @@ func create_character(character_id: String = "noam") -> Node3D:
 		source_player.reparent(body_instance)
 		source_player.name = "CharacterAnimationPlayer"
 		source_player.root_node = NodePath("..")
+		if not source_player.has_animation("Idle_A"):
+			var default_library := source_player.get_animation_library("") as AnimationLibrary
+			if default_library == null:
+				default_library = AnimationLibrary.new()
+				var library_error := source_player.add_animation_library("", default_library)
+				if library_error != OK:
+					push_warning("Could not create idle animation library: %s" % error_string(library_error))
+			if default_library != null:
+				var idle_clip := Animation.new()
+				idle_clip.length = 3.2
+				idle_clip.loop_mode = Animation.LOOP_LINEAR
+				var idle_error := default_library.add_animation("Idle_A", idle_clip)
+				if idle_error != OK:
+					push_warning("Could not add procedural idle animation: %s" % error_string(idle_error))
 		animation_source.free()
 	else:
 		animation_source.free()
