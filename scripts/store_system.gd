@@ -156,7 +156,7 @@ func _build_interior(trim_color: Color) -> void:
 	_add_visual_box(interior_root, Vector3(13.8, 0.06, 13.8), SHOP_CENTER + Vector3(0.0, 0.19, 0.0), Color("#c9c2b4"))
 	_add_visual_box(interior_root, Vector3(13.5, 0.12, 0.16), SHOP_CENTER + Vector3(0.0, 0.38, 6.55), trim_color)
 	_add_visual_box(interior_root, Vector3(0.16, 0.12, 13.2), SHOP_CENTER + Vector3(-6.55, 0.38, 0.0), trim_color)
-	_add_visual_box(self, Vector3(0.16, 0.12, 13.2), SHOP_CENTER + Vector3(6.55, 0.38, 0.0), trim_color)
+	_add_visual_box(interior_root, Vector3(0.16, 0.12, 13.2), SHOP_CENTER + Vector3(6.55, 0.38, 0.0), trim_color)
 
 	_build_rack(interior_root, SHOP_CENTER + Vector3(-5.1, 0.0, -2.0), Color("#8c7657"))
 	_build_rack(interior_root, SHOP_CENTER + Vector3(5.1, 0.0, -2.0), Color("#8c7657"))
