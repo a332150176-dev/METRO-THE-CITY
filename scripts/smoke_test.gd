@@ -18,13 +18,13 @@ func _run_smoke_test() -> void:
 		push_error("Smoke test: road network was not initialized")
 		quit(1)
 		return
-	var route: PackedVector3Array = game.road_network.build_route(0, 48)
+	var route: PackedVector3Array = game.road_network.build_route(0, 80)
 	if route.size() < 5:
-		push_error("Smoke test: 7x7 route generation failed")
+		push_error("Smoke test: 9x9 route generation failed")
 		quit(1)
 		return
-	if game.road_network.all_intersections().size() != 49:
-		push_error("Smoke test: expanded city does not contain 49 intersections")
+	if game.road_network.all_intersections().size() != 81:
+		push_error("Smoke test: expanded city does not contain 81 intersections")
 		quit(1)
 		return
 	var city_node := game.get_node_or_null("ProceduralCity")
@@ -163,5 +163,5 @@ func _run_smoke_test() -> void:
 		quit(1)
 		return
 
-	print("METRO smoke test passed: 7x7 city, eight textured suburban buildings, five textured skyscrapers, eight authored vehicles, police wanted response, traffic, campaign, vehicles, interactive store with 3D products, checkout and persistent inventory")
+	print("METRO smoke test passed: 9x9 city, eight textured suburban buildings, five textured skyscrapers, eight authored vehicles, police wanted response, traffic, campaign, vehicles, interactive store with 3D products, checkout and persistent inventory")
 	quit(0)
