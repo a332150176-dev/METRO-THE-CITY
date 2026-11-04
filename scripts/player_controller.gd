@@ -23,6 +23,10 @@ var right_leg: Node3D
 var walk_phase: float = 0.0
 var humanoid_factory: HumanoidFactory
 var character_animation_player: AnimationPlayer
+var rigged_skeleton: Skeleton3D
+var idle_bone_pose: Dictionary = {}
+var idle_phase: float = 0.0
+var idle_pose_enabled: bool = false
 
 func _ready() -> void:
 	_build_body()
@@ -52,9 +56,67 @@ func _install_rigged_model() -> bool:
 	left_leg = null
 	right_leg = null
 	character_animation_player = visual_root.find_child("CharacterAnimationPlayer", true, false) as AnimationPlayer
+	rigged_skeleton = _find_skeleton(visual_root)
+	_cache_idle_bone_pose()
 	if character_animation_player != null and character_animation_player.has_animation("Idle_A"):
 		character_animation_player.play("Idle_A")
+		idle_pose_enabled = true
 	return character_animation_player != null
+
+func _find_skeleton(node: Node) -> Skeleton3D:
+	if node is Skeleton3D:
+		return node as Skeleton3D
+	for child in node.get_children():
+		var found := _find_skeleton(child)
+		if found != null:
+			return found
+	return null
+
+func _cache_idle_bone_pose() -> void:
+	idle_bone_pose.clear()
+	if rigged_skeleton == null:
+		return
+	for bone_name in ["hips", "spine", "chest", "head"]:
+		var bone_index := rigged_skeleton.find_bone(bone_name)
+		if bone_index < 0:
+			continue
+		idle_bone_pose[bone_name] = {
+			"index": bone_index,
+			"position": rigged_skeleton.get_bone_pose_position(bone_index),
+			"rotation": rigged_skeleton.get_bone_pose_rotation(bone_index)
+		}
+
+func _apply_procedural_idle(delta: float) -> void:
+	if rigged_skeleton == null or idle_bone_pose.is_empty():
+		return
+	idle_phase += delta
+	var breath := sin(idle_phase * TAU / 3.8)
+	if idle_bone_pose.has("spine"):
+		var spine_pose: Dictionary = idle_bone_pose["spine"]
+		var spine_rotation: Quaternion = spine_pose["rotation"]
+		rigged_skeleton.set_bone_pose_rotation(
+			int(spine_pose["index"]),
+			spine_rotation * Quaternion(Vector3.RIGHT, breath * 0.006)
+		)
+	if idle_bone_pose.has("chest"):
+		var chest_pose: Dictionary = idle_bone_pose["chest"]
+		var chest_rotation: Quaternion = chest_pose["rotation"]
+		rigged_skeleton.set_bone_pose_rotation(
+			int(chest_pose["index"]),
+			chest_rotation * Quaternion(Vector3.RIGHT, breath * 0.012)
+		)
+	if idle_bone_pose.has("head"):
+		var head_pose: Dictionary = idle_bone_pose["head"]
+		var head_rotation: Quaternion = head_pose["rotation"]
+		rigged_skeleton.set_bone_pose_rotation(
+			int(head_pose["index"]),
+			head_rotation * Quaternion(Vector3.UP, sin(idle_phase * 0.55) * 0.006)
+		)
+	if idle_bone_pose.has("hips"):
+		var hips_pose: Dictionary = idle_bone_pose["hips"]
+		var hips_position: Vector3 = hips_pose["position"]
+		hips_position.y += breath * 0.0025
+		rigged_skeleton.set_bone_pose_position(int(hips_pose["index"]), hips_position)
 
 func set_joystick_source(source: TouchJoystick) -> void:
 	joystick = source
@@ -230,6 +292,9 @@ func _physics_process(delta: float) -> void:
 		walk_phase += delta * (12.0 if sprinting else 8.5)
 		visual_root.position.y = absf(sin(walk_phase * 2.0)) * (0.035 if sprinting else 0.02)
 		if character_animation_player != null:
+			if idle_pose_enabled and rigged_skeleton != null:
+				rigged_skeleton.reset_bone_poses()
+				idle_pose_enabled = false
 			var movement_animation := "Running_A" if sprinting else "Walking_A"
 			if character_animation_player.has_animation(movement_animation) and character_animation_player.current_animation != movement_animation:
 				character_animation_player.play(movement_animation, 0.18)
@@ -243,7 +308,11 @@ func _physics_process(delta: float) -> void:
 		visual_root.position.y = move_toward(visual_root.position.y, 0.0, delta * 0.2)
 		if character_animation_player != null:
 			if character_animation_player.has_animation("Idle_A") and character_animation_player.current_animation != "Idle_A":
+				if rigged_skeleton != null:
+					rigged_skeleton.reset_bone_poses()
 				character_animation_player.play("Idle_A", 0.2)
+			idle_pose_enabled = true
+			_apply_procedural_idle(delta)
 		elif left_arm != null and is_instance_valid(left_arm):
 			left_arm.rotation.x = move_toward(left_arm.rotation.x, 0.0, delta * 3.0)
 			right_arm.rotation.x = move_toward(right_arm.rotation.x, 0.0, delta * 3.0)
