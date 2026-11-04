@@ -96,6 +96,7 @@ func _start_game(character_id: String) -> void:
 	add_child(player)
 	player.configure(character_id)
 	store_system.configure(player)
+	traffic_manager.set_player_tracker(player)
 	player.global_position = Vector3(-65.0, 0.05, -65.0)
 
 	hud.show_gameplay()
