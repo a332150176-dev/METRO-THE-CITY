@@ -42,8 +42,8 @@ func _draw() -> void:
 			draw_rect(block_rect, Color("#1c3440"), true)
 
 	for road in [-76.0, 0.0, 76.0]:
-		var x := center.x + road * scale
-		var z := center.y + road * scale
+		var x: float = center.x + road * scale
+		var z: float = center.y + road * scale
 		draw_line(Vector2(x, 4.0), Vector2(x, size.y - 4.0), Color("#6c7d87"), 8.0, true)
 		draw_line(Vector2(4.0, z), Vector2(size.x - 4.0, z), Color("#6c7d87"), 8.0, true)
 		draw_line(Vector2(x, 4.0), Vector2(x, size.y - 4.0), Color("#c0c5c3"), 0.8, true)

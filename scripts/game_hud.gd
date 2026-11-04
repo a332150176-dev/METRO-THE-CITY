@@ -15,6 +15,7 @@ var reputation_label: Label
 var selected_character: String = "noam"
 var sprint_button: Button
 var action_button: Button
+var minimap: CityMiniMap
 
 func show_character_selection() -> void:
 	selected_character = GameState.selected_character
