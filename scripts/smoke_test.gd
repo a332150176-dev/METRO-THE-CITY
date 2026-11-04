@@ -42,6 +42,10 @@ func _run_smoke_test() -> void:
 		push_error("Smoke test: five downtown skyscraper models did not load")
 		quit(1)
 		return
+	if city_node.get("high_detail_setpiece_count") < 3 or city_node.get("high_detail_tree_count") < 20:
+		push_error("Smoke test: high-detail city architecture and trees were not added")
+		quit(1)
+		return
 	if game.humanoid_factory == null or not game.humanoid_factory.assets_ready():
 		push_error("Smoke test: the rigged humanoid asset kit did not load")
 		quit(1)
@@ -98,6 +102,10 @@ func _run_smoke_test() -> void:
 		return
 	if game.player.character_animation_player == null:
 		push_error("Smoke test: player character rig and animation player did not initialize")
+		quit(1)
+		return
+	if str(game.player.visual_root.get_meta("visual_quality", "")) != "high_detail":
+		push_error("Smoke test: player did not use the new high-detail character")
 		quit(1)
 		return
 	var player_animations: PackedStringArray = game.player.character_animation_player.get_animation_list()
@@ -205,5 +213,5 @@ func _run_smoke_test() -> void:
 		quit(1)
 		return
 
-	print("METRO smoke test passed: 9x9 city, eight textured suburban buildings, five textured skyscrapers, rigged animated player and pedestrians, eight authored vehicles, police wanted response, traffic, campaign, vehicles, interactive store with 3D products, checkout and persistent inventory")
+	print("METRO smoke test passed: PBR asphalt, high-detail city setpieces and trees, rigged Quaternius player and pedestrian models with idle/walk/run clips, 9x9 city, traffic, vehicles, campaign, police, interactive store and persistent inventory")
 	quit(0)

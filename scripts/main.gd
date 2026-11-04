@@ -83,17 +83,31 @@ func _build_environment() -> void:
 	sky_material.ground_horizon_color = Color("#8a999a")
 	sky.sky_material = sky_material
 	environment.sky = sky
-	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_color = Color("#9ab2c4")
-	environment.ambient_light_energy = 0.48
+	environment.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	environment.ambient_light_color = Color("#b4c6d3")
+	environment.ambient_light_energy = 0.82
+	environment.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	environment.tonemap_exposure = 1.08
+	environment.glow_enabled = true
+	environment.glow_intensity = 0.22
+	environment.glow_strength = 0.78
+	environment.glow_bloom = 0.035
+	environment.fog_enabled = true
+	environment.fog_light_color = Color("#9fb5c2")
+	environment.fog_density = 0.0012
+	environment.fog_sky_affect = 0.68
 	environment_node.environment = environment
 	add_child(environment_node)
 
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-53.0, -32.0, 0.0)
-	sun.light_energy = 0.82
+	sun.light_energy = 1.18
 	sun.shadow_enabled = true
+	sun.shadow_bias = 0.035
+	sun.shadow_normal_bias = 1.2
+	sun.directional_shadow_max_distance = 190.0
+	sun.light_angular_distance = 0.45
 	add_child(sun)
 
 func _start_game(character_id: String) -> void:

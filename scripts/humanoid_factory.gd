@@ -1,6 +1,8 @@
 extends Node
 class_name HumanoidFactory
 
+const HIGH_DETAIL_CHARACTER_PATH := "res://assets/visual_upgrade/lagos_player.glb"
+
 const ASSETS := {
 	"body": "body.glb.b64",
 	"hair": "hair_short.glb.b64",
@@ -13,6 +15,7 @@ const ASSETS := {
 
 var packed_scenes: Dictionary = {}
 var load_errors: Array[String] = []
+var high_detail_character_scene: PackedScene
 
 func load_assets() -> void:
 	packed_scenes.clear()
@@ -44,10 +47,22 @@ func load_assets() -> void:
 			load_errors.append("pack: %s (%s)" % [file_name, error_string(pack_error)])
 		imported_scene.free()
 
+	var high_detail_resource := load(HIGH_DETAIL_CHARACTER_PATH)
+	if high_detail_resource is PackedScene:
+		high_detail_character_scene = high_detail_resource as PackedScene
+	else:
+		load_errors.append("missing or invalid high-detail character: " + HIGH_DETAIL_CHARACTER_PATH)
+
 func assets_ready() -> bool:
+	if high_detail_character_scene != null:
+		return true
 	return packed_scenes.has("body") and packed_scenes.has("hair") and packed_scenes.has("top") and packed_scenes.has("bottom") and packed_scenes.has("boots") and packed_scenes.has("movement")
 
 func create_character(character_id: String = "noam", custom_shirt_color: String = "") -> Node3D:
+	if high_detail_character_scene != null:
+		var high_detail_character := _create_high_detail_character(character_id, custom_shirt_color)
+		if high_detail_character != null:
+			return high_detail_character
 	if not assets_ready():
 		return null
 	var body_instance := packed_scenes["body"].instantiate() as Node3D
@@ -111,6 +126,114 @@ func create_character(character_id: String = "noam", custom_shirt_color: String 
 	body_instance.scale = Vector3.ONE * 0.82
 	result.set_meta("character_id", character_id)
 	return result
+
+func _create_high_detail_character(character_id: String, custom_shirt_color: String) -> Node3D:
+	var model := high_detail_character_scene.instantiate() as Node3D
+	if model == null:
+		return null
+	model.name = "HighDetailHumanoid"
+
+	var animation_player := _find_animation_player(model)
+	if animation_player == null:
+		model.free()
+		return null
+	animation_player.name = "CharacterAnimationPlayer"
+
+	var default_library := animation_player.get_animation_library("") as AnimationLibrary
+	if default_library == null:
+		default_library = AnimationLibrary.new()
+		var library_error := animation_player.add_animation_library("", default_library)
+		if library_error != OK:
+			push_warning("Could not create high-detail character animation library: %s" % error_string(library_error))
+			model.free()
+			return null
+
+	var animation_aliases := {
+		"Idle_A": "HumanArmature|Man_Idle",
+		"Walking_A": "HumanArmature|Man_Walk",
+		"Running_A": "HumanArmature|Man_Run"
+	}
+	for alias_value in animation_aliases.keys():
+		var alias_name := str(alias_value)
+		var source_name := str(animation_aliases[alias_value])
+		if animation_player.has_animation(alias_name):
+			continue
+		if not animation_player.has_animation(source_name):
+			push_warning("High-detail character is missing animation: " + source_name)
+			continue
+		var source_clip := animation_player.get_animation(source_name) as Animation
+		if source_clip == null:
+			continue
+		var clip_copy := source_clip.duplicate(true) as Animation
+		if clip_copy == null:
+			continue
+		clip_copy.loop_mode = Animation.LOOP_LINEAR
+		var add_error := default_library.add_animation(alias_name, clip_copy)
+		if add_error != OK:
+			push_warning("Could not add high-detail animation %s: %s" % [alias_name, error_string(add_error)])
+
+	_apply_high_detail_colors(model, character_id, custom_shirt_color)
+	# Quaternius' source character faces +Z; the game camera and movement use -Z.
+	model.rotation.y = PI
+	model.scale = Vector3.ONE * 0.95
+
+	var result := Node3D.new()
+	result.name = "RiggedCharacterModel"
+	result.add_child(model)
+	result.set_meta("character_id", character_id)
+	result.set_meta("visual_quality", "high_detail")
+	return result
+
+func _apply_high_detail_colors(model_root: Node3D, character_id: String, custom_shirt_color: String) -> void:
+	var lookup_id := "noam" if character_id == "pedestrian" else character_id
+	var character := CharacterCatalog.get_character(lookup_id)
+	var hair_colors := {
+		"noam": Color("#30241e"),
+		"lior": Color("#4a3025"),
+		"amit": Color("#211e1b")
+	}
+	var palette := {
+		"skin": character["skin"],
+		"hair": hair_colors.get(lookup_id, Color("#30241e")),
+		"shirt": character["shirt"],
+		"pants": character["pants"],
+		"shoes": Color("#25282d"),
+		"socks": Color("#25282d")
+	}
+	if not custom_shirt_color.is_empty():
+		palette["shirt"] = Color(custom_shirt_color)
+
+	var meshes: Array[MeshInstance3D] = []
+	_collect_mesh_instances(model_root, meshes)
+	for mesh_instance in meshes:
+		if mesh_instance.mesh == null:
+			continue
+		for surface_index in range(mesh_instance.mesh.get_surface_count()):
+			var source_material := mesh_instance.mesh.surface_get_material(surface_index) as StandardMaterial3D
+			if source_material == null:
+				continue
+			var material_key := source_material.resource_name.to_lower()
+			var tint: Color
+			var should_tint := true
+			if material_key.contains("shirt"):
+				tint = palette["shirt"]
+			elif material_key.contains("pants"):
+				tint = palette["pants"]
+			elif material_key.contains("skin"):
+				tint = palette["skin"]
+			elif material_key.contains("hair"):
+				tint = palette["hair"]
+			elif material_key.contains("shoe") or material_key.contains("sock"):
+				tint = palette["shoes"]
+			else:
+				should_tint = false
+			if not should_tint:
+				continue
+			var material_copy := source_material.duplicate() as StandardMaterial3D
+			if material_copy == null:
+				continue
+			material_copy.albedo_color = tint
+			mesh_instance.set_surface_override_material(surface_index, material_copy)
 
 func _merge_animation_libraries(target: AnimationPlayer, source: AnimationPlayer) -> void:
 	var target_library := target.get_animation_library("") as AnimationLibrary

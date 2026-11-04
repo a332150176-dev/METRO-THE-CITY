@@ -77,7 +77,7 @@ func _build_person() -> void:
 	add_child(collider)
 
 	if humanoid_factory != null:
-		rigged_model = humanoid_factory.create_character("pedestrian")
+		rigged_model = humanoid_factory.create_character("pedestrian", shirt_color.to_html())
 		if rigged_model != null:
 			rigged_model.name = "RiggedPedestrian"
 			add_child(rigged_model)

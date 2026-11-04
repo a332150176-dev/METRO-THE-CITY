@@ -23,12 +23,19 @@ var suburban_transforms: Array = []
 var downtown_meshes: Array[Mesh] = []
 var downtown_materials: Array[Material] = []
 var downtown_transforms: Array = []
+var road_surface_material: StandardMaterial3D
+var high_detail_downtown_scene: PackedScene
+var high_detail_apartment_scene: PackedScene
+var high_detail_tree_scene: PackedScene
+var high_detail_setpiece_count: int = 0
+var high_detail_tree_count: int = 0
 
 func build_city(controller: TrafficController) -> void:
 	traffic_controller = controller
 	rng.seed = 20261104
 	_load_suburban_models()
 	_load_downtown_models()
+	_load_visual_upgrade_assets()
 	_build_ground()
 	_build_roads()
 	_build_blocks()
@@ -36,6 +43,63 @@ func build_city(controller: TrafficController) -> void:
 	_build_suburban_model_batches()
 	_build_downtown_model_batches()
 	_build_batched_details()
+
+func _load_visual_upgrade_assets() -> void:
+	var downtown_resource := load("res://assets/visual_upgrade/downtown.glb")
+	if downtown_resource is PackedScene:
+		high_detail_downtown_scene = downtown_resource as PackedScene
+	var apartment_resource := load("res://assets/visual_upgrade/alley-apartments.glb")
+	if apartment_resource is PackedScene:
+		high_detail_apartment_scene = apartment_resource as PackedScene
+	var tree_resource := load("res://assets/visual_upgrade/tree.glb")
+	if tree_resource is PackedScene:
+		high_detail_tree_scene = tree_resource as PackedScene
+
+	var albedo := load("res://assets/visual_upgrade/asphalt-color.jpg") as Texture2D
+	var normal := load("res://assets/visual_upgrade/asphalt-normalgl.jpg") as Texture2D
+	var roughness := load("res://assets/visual_upgrade/asphalt-roughness.jpg") as Texture2D
+	if albedo != null and normal != null and roughness != null:
+		road_surface_material = StandardMaterial3D.new()
+		road_surface_material.albedo_texture = albedo
+		road_surface_material.normal_enabled = true
+		road_surface_material.normal_texture = normal
+		road_surface_material.normal_scale = 0.62
+		road_surface_material.roughness = 0.86
+		road_surface_material.roughness_texture = roughness
+		road_surface_material.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
+		road_surface_material.uv1_scale = Vector3(0.085, 0.085, 0.085)
+		road_surface_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+
+func _apply_box_material(holder: Node3D, material: Material) -> void:
+	for child in holder.get_children():
+		if child is MeshInstance3D:
+			(child as MeshInstance3D).material_override = material
+			return
+
+func _add_high_detail_building(scene: PackedScene, position: Vector3, scale_factor: float, label: String) -> void:
+	if scene == null:
+		return
+	var model := scene.instantiate() as Node3D
+	if model == null:
+		return
+	model.name = label
+	model.position = Vector3(position.x, 0.035, position.z)
+	model.scale = Vector3.ONE * scale_factor
+	model.rotation.y = float(rng.randi_range(0, 3)) * PI * 0.5
+	add_child(model)
+
+	# A simple collision volume keeps the authored building solid without
+	# generating hundreds of individual collision shapes.
+	var body := StaticBody3D.new()
+	body.name = label + "_Collision"
+	body.position = Vector3(position.x, 7.2 * scale_factor, position.z)
+	add_child(body)
+	var collision := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(22.0 * scale_factor, 14.4 * scale_factor, 22.0 * scale_factor)
+	collision.shape = shape
+	body.add_child(collision)
+	high_detail_setpiece_count += 1
 
 func _material(color: Color, roughness: float = 0.88) -> StandardMaterial3D:
 	var result := StandardMaterial3D.new()
@@ -86,8 +150,11 @@ func _build_ground() -> void:
 func _build_roads() -> void:
 	for grid in range(GRID_SIZE):
 		var coordinate := (float(grid) - float(GRID_SIZE - 1) * 0.5) * GRID_SPACING
-		_box(self, Vector3(CITY_EDGE, 0.13, ROAD_WIDTH), Vector3(0.0, -0.01, coordinate), Color("#30343a"))
-		_box(self, Vector3(ROAD_WIDTH, 0.13, CITY_EDGE), Vector3(coordinate, -0.005, 0.0), Color("#292e34"))
+		var horizontal_road := _box(self, Vector3(CITY_EDGE, 0.13, ROAD_WIDTH), Vector3(0.0, -0.01, coordinate), Color("#30343a"))
+		var vertical_road := _box(self, Vector3(ROAD_WIDTH, 0.13, CITY_EDGE), Vector3(coordinate, -0.005, 0.0), Color("#292e34"))
+		if road_surface_material != null:
+			_apply_box_material(horizontal_road, road_surface_material)
+			_apply_box_material(vertical_road, road_surface_material)
 		_box(self, Vector3(CITY_EDGE, 0.12, 3.5), Vector3(0.0, 0.0, coordinate - 10.9), Color("#8e9692"))
 		_box(self, Vector3(CITY_EDGE, 0.12, 3.5), Vector3(0.0, 0.0, coordinate + 10.9), Color("#aaa99d"))
 		_box(self, Vector3(3.5, 0.12, CITY_EDGE), Vector3(coordinate - 10.9, 0.0, 0.0), Color("#aaa99d"))
@@ -122,32 +189,48 @@ func _build_blocks() -> void:
 			var downtown := block_x >= district_center and block_x <= district_center + 1 and block_z >= district_center and block_z <= district_center + 1
 			var mixed := not downtown and (block_x == district_center or block_x == district_center + 1 or block_z == district_center or block_z == district_center + 1)
 			var palette: Array[Color] = downtown_colors if downtown else (mixed_colors if mixed else residential_colors)
+			var is_market_block := block_x == district_center and block_z == district_center
+			var use_high_detail_block := downtown and not is_market_block and high_detail_downtown_scene != null and high_detail_apartment_scene != null
 
-			for offset_x in [-14.0, 14.0]:
-				for offset_z in [-14.0, 14.0]:
-					var width := rng.randf_range(12.0, 18.0)
-					var depth := rng.randf_range(12.0, 18.0)
-					var height := rng.randf_range(13.0, 26.0)
-					if mixed:
-						height = rng.randf_range(20.0, 38.0)
-					if downtown:
-						height = rng.randf_range(34.0, 56.0)
-					var position := Vector3(center_x + offset_x, height * 0.5 - 0.05, center_z + offset_z)
-					var color: Color = palette[rng.randi_range(0, palette.size() - 1)]
-					var is_minimarket_lot := block_x == int((GRID_SIZE - 2) / 2) and block_z == int((GRID_SIZE - 2) / 2) and is_equal_approx(float(offset_x), -14.0) and is_equal_approx(float(offset_z), -14.0)
-					if not is_minimarket_lot:
-						if downtown and not downtown_meshes.is_empty():
-							_queue_downtown_building(position)
-						else:
-							var use_authored_model := not downtown and (not mixed or rng.randf() > 0.42) and not suburban_meshes.is_empty()
-							if use_authored_model:
-								_queue_suburban_building(position)
+			if use_high_detail_block:
+				var selected_scene := high_detail_downtown_scene if (block_x + block_z) % 2 == 0 else high_detail_apartment_scene
+				var selected_scale := 0.92 if selected_scene == high_detail_downtown_scene else 0.88
+				_add_high_detail_building(
+					selected_scene,
+					Vector3(center_x, 0.0, center_z),
+					selected_scale,
+					"HighDetailCityBlock_%02d_%02d" % [block_x, block_z]
+				)
+			else:
+				for offset_x in [-14.0, 14.0]:
+					for offset_z in [-14.0, 14.0]:
+						var width := rng.randf_range(12.0, 18.0)
+						var depth := rng.randf_range(12.0, 18.0)
+						var height := rng.randf_range(13.0, 26.0)
+						if mixed:
+							height = rng.randf_range(20.0, 38.0)
+						if downtown:
+							height = rng.randf_range(34.0, 56.0)
+						var position := Vector3(center_x + offset_x, height * 0.5 - 0.05, center_z + offset_z)
+						var color: Color = palette[rng.randi_range(0, palette.size() - 1)]
+						var is_minimarket_lot := is_market_block and is_equal_approx(float(offset_x), -14.0) and is_equal_approx(float(offset_z), -14.0)
+						if not is_minimarket_lot:
+							if downtown and not downtown_meshes.is_empty():
+								_queue_downtown_building(position)
 							else:
-								_add_building(Vector3(width, height, depth), position, color, downtown)
+								var use_authored_model := not downtown and (not mixed or rng.randf() > 0.42) and not suburban_meshes.is_empty()
+								if use_authored_model:
+									_queue_suburban_building(position)
+								else:
+									_add_building(Vector3(width, height, depth), position, color, downtown)
 
-			_add_tree(Vector3(center_x - 25.0, 0.0, center_z))
-			_add_tree(Vector3(center_x + 25.0, 0.0, center_z))
-			_add_bench(Vector3(center_x, 0.0, center_z - 25.0))
+			# Authored tree geometry replaces the old trunk-and-sphere placeholders.
+			if (block_x + block_z) % 2 == 0:
+				_add_tree(Vector3(center_x - 25.0, 0.0, center_z))
+			if not use_high_detail_block and (block_x * 2 + block_z) % 3 == 0:
+				_add_tree(Vector3(center_x + 25.0, 0.0, center_z))
+			if not use_high_detail_block:
+				_add_bench(Vector3(center_x, 0.0, center_z - 25.0))
 
 func _add_building(size: Vector3, position: Vector3, color: Color, downtown: bool) -> void:
 	var building := _box(self, size, position, color, true)
@@ -373,6 +456,17 @@ func _build_suburban_model_batches() -> void:
 		add_child(instance)
 
 func _add_tree(position: Vector3) -> void:
+	if high_detail_tree_scene != null:
+		var tree := high_detail_tree_scene.instantiate() as Node3D
+		if tree != null:
+			tree.name = "AuthoredTree_%02d" % high_detail_tree_count
+			tree.position = position
+			tree.scale = Vector3.ONE * 0.62
+			tree.rotation.y = rng.randf_range(0.0, TAU)
+			add_child(tree)
+			high_detail_tree_count += 1
+			return
+
 	var trunk := _box(self, Vector3(0.42, 2.4, 0.42), position + Vector3(0.0, 1.2, 0.0), Color("#71543b"))
 	var crown := MeshInstance3D.new()
 	var sphere := SphereMesh.new()

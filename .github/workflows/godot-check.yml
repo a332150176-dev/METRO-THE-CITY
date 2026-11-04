@@ -25,6 +25,17 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
+      - name: Set up Node.js for GLB asset preparation
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Fetch and prepare higher-detail visual assets
+        run: |
+          bash tools/fetch_visual_assets.sh
+          npm install --prefix .github/visual-tools --no-save --no-audit --no-fund @gltf-transform/core@4.1.1 @gltf-transform/extensions@4.1.1 @gltf-transform/functions@4.1.1 meshoptimizer@0.22.0
+          node .github/visual-tools/decompress-assets.mjs
+
       - name: Import project and validate scripts
         run: godot --headless --editor --path . --quit
 

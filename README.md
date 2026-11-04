@@ -1,6 +1,6 @@
 # METRO: THE CITY
 
-A third-person 3D Android action/adventure game built with Godot 4.3+, using the Compatibility renderer (OpenGL ES 3) for mobile hardware.
+A third-person 3D Android action/adventure game built with Godot 4.3+, using Godot 4.3 Mobile rendering (Vulkan) with locally bundled PBR and authored 3D assets.
 
 ## Open the playable source
 
@@ -17,7 +17,9 @@ The current reconstructed gameplay baseline includes:
 - A live mini-map showing the expanded city grid, next mission target and the player's position, including while driving.
 - A wanted-level system with five levels, vehicle-theft and driving-collision reports, road-routed police pursuits, flashing emergency lights and backup dispatch.
 
-The scene uses procedural geometry and intentionally modest rendering settings as a first playable baseline for the M36 Plus target. The source here is a reconstruction from the established V10 design requirements; the original V10 archive is still being transferred and has not yet been verified as restored.
+The visual layer now uses an authored rigged character with Idle/Walk/Run clips, scanned PBR asphalt maps, a Poly Haven apartment facade set, a Quaternius downtown building set, and a textured 3D tree. The build pipeline fetches the large CC0 city models, verifies their source hashes, and converts Meshopt-compressed GLB files into Godot 4.3-compatible GLB files before import.
+
+Before opening the project locally, prepare the visual assets with the commands in `assets/visual_upgrade/ASSET_SOURCES.md`. Android and headless validation workflows perform this step automatically.
 
 ## Validation
 
