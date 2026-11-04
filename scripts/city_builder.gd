@@ -172,7 +172,7 @@ func _add_building(size: Vector3, position: Vector3, color: Color, downtown: boo
 	# Ground-floor shopfronts add scale and recognizable street-level detail.
 	var shop_y := -size.y * 0.5 + 1.78
 	for shop_side in [-1.0, 1.0]:
-		var shop_x := shop_side * size.x * 0.25
+		var shop_x: float = shop_side * size.x * 0.25
 		_visual_box(building, Vector3(size.x * 0.30, 1.82, 0.13), Vector3(shop_x, shop_y, -size.z * 0.5 - 0.10), Color("#29424d"))
 		_visual_box(building, Vector3(size.x * 0.27, 1.58, 0.035), Vector3(shop_x, shop_y, -size.z * 0.5 - 0.19), Color("#426777"))
 		_visual_box(building, Vector3(size.x * 0.32, 0.12, 0.26), Vector3(shop_x, shop_y + 1.02, -size.z * 0.5 - 0.23), Color("#4d5960"))
