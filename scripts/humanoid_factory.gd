@@ -82,6 +82,11 @@ func create_character(character_id: String = "noam") -> Node3D:
 		source_player.reparent(body_instance)
 		source_player.name = "CharacterAnimationPlayer"
 		source_player.root_node = NodePath("..")
+		for locomotion_name in ["Walking_A", "Walking_B", "Walking_C", "Running_A", "Running_B"]:
+			if source_player.has_animation(locomotion_name):
+				var locomotion_clip := source_player.get_animation(locomotion_name) as Animation
+				if locomotion_clip != null:
+					locomotion_clip.loop_mode = Animation.LOOP_LINEAR
 		if not source_player.has_animation("Idle_A"):
 			var default_library := source_player.get_animation_library("") as AnimationLibrary
 			if default_library == null:
