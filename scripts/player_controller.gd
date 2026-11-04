@@ -42,7 +42,11 @@ func configure(id: String, factory: HumanoidFactory = null) -> void:
 func _install_rigged_model() -> bool:
 	if humanoid_factory == null or not humanoid_factory.assets_ready():
 		return false
-	var authored_model := humanoid_factory.create_character(character_id)
+	var custom_shirt_color := ""
+	var saved_game_state := get_node_or_null("/root/GameState")
+	if saved_game_state != null:
+		custom_shirt_color = str(saved_game_state.get("custom_shirt_color"))
+	var authored_model := humanoid_factory.create_character(character_id, custom_shirt_color)
 	if authored_model == null:
 		return false
 	if visual_root != null and is_instance_valid(visual_root):
