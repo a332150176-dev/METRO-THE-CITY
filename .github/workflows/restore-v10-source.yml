@@ -2,9 +2,6 @@ name: Restore V10 source archive
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - ".source_transfer/**"
 
 permissions:
   contents: write
