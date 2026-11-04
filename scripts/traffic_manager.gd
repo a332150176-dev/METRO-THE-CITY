@@ -10,6 +10,8 @@ var network: RoadNetwork
 var lights: TrafficController
 var cars: Array[TrafficCar] = []
 var pedestrians: Array[CityPedestrian] = []
+var police_units: Array[TrafficCar] = []
+var wanted_level: int = 0
 var spawn_clock: float = 0.0
 var simulation_clock: float = 0.0
 var player_tracker: Node3D
@@ -62,6 +64,57 @@ func _load_vehicle_models() -> void:
 		else:
 			push_warning("Could not pack vehicle model %s: %s" % [model_name, error_string(pack_error)])
 		model_scene.free()
+
+func set_wanted_level(level: int, player_node: Node3D) -> void:
+	wanted_level = clampi(level, 0, 5)
+	var active_units := mini(wanted_level, 3)
+	while police_units.size() < active_units:
+		_spawn_police_unit(player_node)
+	while police_units.size() > active_units:
+		var unit: TrafficCar = police_units.pop_back()
+		if is_instance_valid(unit):
+			unit.pursuit_target = null
+			unit.queue_free()
+
+func _spawn_police_unit(player_node: Node3D) -> void:
+	if player_node == null or not is_instance_valid(player_node) or network == null:
+		return
+	var target_data := network.nearest_intersection(player_node.global_position)
+	var target_id := int(target_data["id"])
+	var target_position: Vector3 = target_data["position"]
+	var candidates: Array[int] = []
+	var fallback_id := 0
+	var fallback_distance := -1.0
+	for id in range(network.GRID_SIZE * network.GRID_SIZE):
+		var point := network.intersection_position(id)
+		var distance := Vector2(point.x, point.z).distance_to(Vector2(player_node.global_position.x, player_node.global_position.z))
+		if distance > fallback_distance:
+			fallback_distance = distance
+			fallback_id = id
+		if distance >= 85.0 and distance <= 220.0 and id != target_id:
+			candidates.append(id)
+	var start_id := fallback_id
+	if not candidates.is_empty():
+		start_id = candidates[rng.randi_range(0, candidates.size() - 1)]
+	var lane := 3.1 if police_units.size() % 2 == 0 else -3.1
+	var police := CAR_SCRIPT.new() as TrafficCar
+	police.name = "PolicePursuit_%02d" % (police_units.size() + 1)
+	police.setup(network, lights, start_id, target_id, Color("#f1eee7"), lane, self, "police")
+	add_child(police)
+	cars.append(police)
+	police_units.append(police)
+	police.begin_pursuit(player_node)
+
+func closest_police_distance(player_node: Node3D) -> float:
+	if player_node == null or not is_instance_valid(player_node):
+		return INF
+	var closest := INF
+	for police in police_units:
+		if not is_instance_valid(police) or police.is_queued_for_deletion():
+			continue
+		var distance := Vector2(police.global_position.x, police.global_position.z).distance_to(Vector2(player_node.global_position.x, player_node.global_position.z))
+		closest = minf(closest, distance)
+	return closest
 
 func get_vehicle_scene(model_name: String) -> PackedScene:
 	var requested := model_name
