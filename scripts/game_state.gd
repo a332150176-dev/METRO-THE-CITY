@@ -24,7 +24,7 @@ func add_reward(amount: int, reputation_points: int = 1) -> void:
 	save_progress()
 
 func set_shirt_color(color: Color) -> void:
-	custom_shirt_color = color.to_html(false)
+	custom_shirt_color = "#" + color.to_html(false).trim_prefix("#")
 	save_progress()
 
 func clear_shirt_color() -> void:
@@ -66,6 +66,8 @@ func load_progress() -> void:
 	reputation = maxi(0, int(config.get_value("player", "reputation", 0)))
 	selected_character = str(config.get_value("player", "character", "noam"))
 	custom_shirt_color = str(config.get_value("player", "custom_shirt_color", ""))
+	if not custom_shirt_color.is_empty() and not custom_shirt_color.begins_with("#"):
+		custom_shirt_color = "#" + custom_shirt_color
 	if not ["noam", "lior", "amit"].has(selected_character):
 		selected_character = "noam"
 	mission_index = maxi(0, int(config.get_value("campaign", "mission_index", 0)))
