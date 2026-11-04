@@ -69,14 +69,14 @@ func _visual_box(parent: Node3D, size: Vector3, position: Vector3, color: Color)
 
 func _build_ground() -> void:
 	_box(self, Vector3(460.0, 1.0, 460.0), Vector3(0.0, -0.5, 0.0), Color("#777d78"), true)
-	_box(self, Vector3(430.0, 0.05, 430.0), Vector3(0.0, 0.02, 0.0), Color("#8b8b7b"))
+	_box(self, Vector3(430.0, 0.05, 430.0), Vector3(0.0, 0.02, 0.0), Color("#777e7b"))
 
 func _build_roads() -> void:
 	for grid in range(GRID_SIZE):
 		var coordinate := (grid - 2) * GRID_SPACING
-		_box(self, Vector3(CITY_EDGE, 0.13, ROAD_WIDTH), Vector3(0.0, -0.01, coordinate), Color("#292e34"))
+		_box(self, Vector3(CITY_EDGE, 0.13, ROAD_WIDTH), Vector3(0.0, -0.01, coordinate), Color("#30343a"))
 		_box(self, Vector3(ROAD_WIDTH, 0.13, CITY_EDGE), Vector3(coordinate, -0.005, 0.0), Color("#292e34"))
-		_box(self, Vector3(CITY_EDGE, 0.12, 3.5), Vector3(0.0, 0.0, coordinate - 10.9), Color("#aaa99d"))
+		_box(self, Vector3(CITY_EDGE, 0.12, 3.5), Vector3(0.0, 0.0, coordinate - 10.9), Color("#8e9692"))
 		_box(self, Vector3(CITY_EDGE, 0.12, 3.5), Vector3(0.0, 0.0, coordinate + 10.9), Color("#aaa99d"))
 		_box(self, Vector3(3.5, 0.12, CITY_EDGE), Vector3(coordinate - 10.9, 0.0, 0.0), Color("#aaa99d"))
 		_box(self, Vector3(3.5, 0.12, CITY_EDGE), Vector3(coordinate + 10.9, 0.0, 0.0), Color("#aaa99d"))
@@ -88,16 +88,16 @@ func _build_roads() -> void:
 
 func _build_blocks() -> void:
 	var residential_colors: Array[Color] = [
-		Color("#b7a991"), Color("#c9c1af"), Color("#9fa9a9"),
-		Color("#d1c5b3"), Color("#aeb8b5"), Color("#b4a28f")
+		Color("#b5a48e"), Color("#bdb5a6"), Color("#929f9f"),
+		Color("#c2b49f"), Color("#9daaa7"), Color("#a89582")
 	]
 	var downtown_colors: Array[Color] = [
-		Color("#8e9da2"), Color("#aab5b6"), Color("#8a969b"),
-		Color("#c0b8a8"), Color("#9caeb2")
+		Color("#87999e"), Color("#9eafb0"), Color("#839198"),
+		Color("#b8ad9e"), Color("#91a4aa")
 	]
 	var mixed_colors: Array[Color] = [
-		Color("#b9aa96"), Color("#b8bdb5"), Color("#a5aaa5"),
-		Color("#c9bca9"), Color("#a4b0af")
+		Color("#b4a18a"), Color("#aab3ac"), Color("#949f9b"),
+		Color("#c1b29e"), Color("#91a3a4")
 	]
 
 	for block_x in range(GRID_SIZE - 1):
@@ -168,6 +168,16 @@ func _add_building(size: Vector3, position: Vector3, color: Color, downtown: boo
 	var door_y := -size.y * 0.5 + 1.2
 	_visual_box(building, Vector3(1.35, 2.25, 0.14), Vector3(-size.x * 0.16, door_y, -size.z * 0.5 - 0.12), Color("#35434a"))
 	_visual_box(building, Vector3(size.x * 0.72, 0.42, 0.26), Vector3(0.0, -size.y * 0.5 + 2.55, -size.z * 0.5 - 0.14), Color("#65777b"))
+
+	# Ground-floor shopfronts add scale and recognizable street-level detail.
+	var shop_y := -size.y * 0.5 + 1.78
+	for shop_side in [-1.0, 1.0]:
+		var shop_x := shop_side * size.x * 0.25
+		_visual_box(building, Vector3(size.x * 0.30, 1.82, 0.13), Vector3(shop_x, shop_y, -size.z * 0.5 - 0.10), Color("#29424d"))
+		_visual_box(building, Vector3(size.x * 0.27, 1.58, 0.035), Vector3(shop_x, shop_y, -size.z * 0.5 - 0.19), Color("#426777"))
+		_visual_box(building, Vector3(size.x * 0.32, 0.12, 0.26), Vector3(shop_x, shop_y + 1.02, -size.z * 0.5 - 0.23), Color("#4d5960"))
+	_visual_box(building, Vector3(size.x * 0.82, 0.48, 0.24), Vector3(0.0, -size.y * 0.5 + 3.15, -size.z * 0.5 - 0.16), Color("#475c62"))
+	_visual_box(building, Vector3(size.x * 0.86, 0.10, 0.34), Vector3(0.0, -size.y * 0.5 + 2.87, -size.z * 0.5 - 0.18), Color("#b28c56"))
 
 	if rng.randf() > 0.45:
 		var rooftop_size := Vector3(rng.randf_range(2.0, 3.2), rng.randf_range(1.2, 2.0), rng.randf_range(2.0, 3.2))
