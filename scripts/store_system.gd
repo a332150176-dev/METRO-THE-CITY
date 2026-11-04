@@ -262,9 +262,15 @@ func _purchase_selected_product() -> void:
 			continue
 		var price := int(product["price"])
 		var name := str(product["name"])
-		if GameState.purchase_item(selected_product_id, price):
-			var count := GameState.item_count(selected_product_id)
-			status_changed.emit("נרכש %s | יחידות בתיק: %d | יתרה: ₪%d" % [name, count, GameState.money])
+		var game_state := get_node_or_null("/root/GameState")
+		if game_state == null:
+			status_changed.emit("שמירת המשחק אינה זמינה כרגע.")
+			return
+		var purchased := bool(game_state.call("purchase_item", selected_product_id, price))
+		if purchased:
+			var count := int(game_state.call("item_count", selected_product_id))
+			var balance := int(game_state.get("money"))
+			status_changed.emit("נרכש %s | יחידות בתיק: %d | יתרה: ₪%d" % [name, count, balance])
 			selected_product_id = ""
 		else:
 			status_changed.emit("אין מספיק כסף עבור %s (₪%d)." % [name, price])
