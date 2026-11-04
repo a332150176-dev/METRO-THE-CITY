@@ -20,13 +20,14 @@ var player_driving: bool = false
 var driver: PlayerController
 var driving_joystick: TouchJoystick
 var vehicle_camera: Camera3D
+var wheel_meshes: Array[MeshInstance3D] = []
 
 func setup(network: RoadNetwork, controller: TrafficController, start_id: int, goal_id: int, color: Color, lane: float = 3.1, manager: TrafficManager = null, type: String = "sedan") -> void:
 	route_network = network
 	lights = controller
 	traffic_manager = manager
 	route_goal_id = goal_id
-	paint_color = color
+	paint_color = Color("#f0c43e") if type == "taxi" else color
 	vehicle_type = type
 	_match_vehicle_dimensions()
 	route = network.build_route(start_id, goal_id, lane)
@@ -54,53 +55,217 @@ func _match_vehicle_dimensions() -> void:
 			body_length = 4.2
 			body_width = 1.85
 
+func _paint(color: Color, roughness: float = 0.58, metallic: float = 0.12) -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = roughness
+	material.metallic = metallic
+	return material
+
+func _add_box(parent: Node3D, dimensions: Vector3, offset: Vector3, color: Color, roughness: float = 0.58, metallic: float = 0.12) -> MeshInstance3D:
+	var instance := MeshInstance3D.new()
+	var mesh := BoxMesh.new()
+	mesh.size = dimensions
+	instance.mesh = mesh
+	instance.position = offset
+	instance.material_override = _paint(color, roughness, metallic)
+	parent.add_child(instance)
+	return instance
+
+func _add_quad(parent: Node3D, a: Vector3, b: Vector3, c: Vector3, d: Vector3, material: Material) -> void:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	surface.add_vertex(a)
+	surface.add_vertex(b)
+	surface.add_vertex(c)
+	surface.add_vertex(a)
+	surface.add_vertex(c)
+	surface.add_vertex(d)
+	surface.generate_normals()
+	var instance := MeshInstance3D.new()
+	instance.mesh = surface.commit()
+	instance.material_override = material
+	parent.add_child(instance)
+
+func _add_cabin_shell(parent: Node3D, width: float, profile: Array[Vector2], material: Material) -> void:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var half := width * 0.5
+	for i in range(profile.size()):
+		var next_index := (i + 1) % profile.size()
+		var a := profile[i]
+		var b := profile[next_index]
+		var left_a := Vector3(-half, a.y, a.x)
+		var right_a := Vector3(half, a.y, a.x)
+		var left_b := Vector3(-half, b.y, b.x)
+		var right_b := Vector3(half, b.y, b.x)
+		surface.add_vertex(left_a)
+		surface.add_vertex(right_a)
+		surface.add_vertex(right_b)
+		surface.add_vertex(left_a)
+		surface.add_vertex(right_b)
+		surface.add_vertex(left_b)
+	for i in range(1, profile.size() - 1):
+		var p0 := profile[0]
+		var p1 := profile[i]
+		var p2 := profile[i + 1]
+		surface.add_vertex(Vector3(-half, p0.y, p0.x))
+		surface.add_vertex(Vector3(-half, p1.y, p1.x))
+		surface.add_vertex(Vector3(-half, p2.y, p2.x))
+		surface.add_vertex(Vector3(half, p0.y, p0.x))
+		surface.add_vertex(Vector3(half, p2.y, p2.x))
+		surface.add_vertex(Vector3(half, p1.y, p1.x))
+	surface.generate_normals()
+	var instance := MeshInstance3D.new()
+	instance.mesh = surface.commit()
+	instance.material_override = material
+	parent.add_child(instance)
+
+func _add_wheel(parent: Node3D, side: float, axle: float) -> void:
+	var wheel := MeshInstance3D.new()
+	var tire := CylinderMesh.new()
+	tire.top_radius = 0.34
+	tire.bottom_radius = 0.34
+	tire.height = 0.22
+	tire.radial_segments = 16
+	wheel.mesh = tire
+	wheel.rotation_degrees.z = 90.0
+	wheel.position = Vector3(side * (body_width * 0.51), 0.36, axle)
+	wheel.material_override = _paint(Color("#171a1d"), 0.92, 0.0)
+	parent.add_child(wheel)
+	wheel_meshes.append(wheel)
+
+	var rim := MeshInstance3D.new()
+	var rim_mesh := CylinderMesh.new()
+	rim_mesh.top_radius = 0.205
+	rim_mesh.bottom_radius = 0.205
+	rim_mesh.height = 0.035
+	rim_mesh.radial_segments = 12
+	rim.mesh = rim_mesh
+	rim.rotation_degrees.z = 90.0
+	rim.position = wheel.position + Vector3(side * 0.12, 0.0, 0.0)
+	rim.material_override = _paint(Color("#9da6aa"), 0.34, 0.7)
+	parent.add_child(rim)
+
+	var hub := MeshInstance3D.new()
+	var hub_mesh := CylinderMesh.new()
+	hub_mesh.top_radius = 0.07
+	hub_mesh.bottom_radius = 0.07
+	hub_mesh.height = 0.045
+	hub_mesh.radial_segments = 12
+	hub.mesh = hub_mesh
+	hub.rotation_degrees.z = 90.0
+	hub.position = rim.position + Vector3(side * 0.025, 0.0, 0.0)
+	hub.material_override = _paint(Color("#333a3e"), 0.42, 0.5)
+	parent.add_child(hub)
+
 func _build_vehicle() -> void:
 	if get_node_or_null("VehicleVisual") != null:
 		return
+	wheel_meshes.clear()
 	var collider := CollisionShape3D.new()
 	var box_shape := BoxShape3D.new()
-	box_shape.size = Vector3(body_width, 1.5 if vehicle_type == "van" else 1.25, body_length)
+	box_shape.size = Vector3(body_width, 1.55 if vehicle_type == "van" else 1.38, body_length)
 	collider.shape = box_shape
-	collider.position.y = 0.68
+	collider.position.y = 0.72
 	add_child(collider)
 
 	var visual := Node3D.new()
 	visual.name = "VehicleVisual"
 	add_child(visual)
-	_add_box(visual, Vector3(body_width, 0.82, body_length), Vector3(0.0, 0.62, 0.0), paint_color)
-	var cabin_length := 2.65 if vehicle_type == "van" else (2.25 if vehicle_type == "suv" else 2.0)
-	var cabin_height := 0.92 if vehicle_type == "van" else (0.78 if vehicle_type == "suv" else 0.68)
-	var cabin_width := body_width * (0.84 if vehicle_type == "van" else 0.80)
-	_add_box(visual, Vector3(cabin_width, cabin_height, cabin_length), Vector3(0.0, 1.34 if vehicle_type == "van" else 1.22, -0.12), Color("#273946"))
-	_add_box(visual, Vector3(body_width * 0.82, 0.12, 0.62), Vector3(0.0, 0.98, -body_length * 0.36), Color("#d7d9d4"))
-	if vehicle_type == "taxi":
-		_add_box(visual, Vector3(0.48, 0.16, 0.3), Vector3(0.0, 1.72, -0.12), Color("#f2c94c"))
-	for side in [-1.0, 1.0]:
-		for axle in [-1.25, 1.25]:
-			var wheel := MeshInstance3D.new()
-			var cylinder := CylinderMesh.new()
-			cylinder.top_radius = 0.34
-			cylinder.bottom_radius = 0.34
-			cylinder.height = 0.2
-			wheel.mesh = cylinder
-			wheel.rotation_degrees.z = 90.0
-			wheel.position = Vector3(side * (body_width * 0.51), 0.38, axle * (body_length / 4.2))
-			var tire := StandardMaterial3D.new()
-			tire.albedo_color = Color("#171a1d")
-			wheel.material_override = tire
-			visual.add_child(wheel)
 
-func _add_box(parent: Node3D, dimensions: Vector3, offset: Vector3, color: Color) -> void:
-	var mesh_instance := MeshInstance3D.new()
-	var mesh := BoxMesh.new()
-	mesh.size = dimensions
-	mesh_instance.mesh = mesh
-	mesh_instance.position = offset
-	var material := StandardMaterial3D.new()
-	material.albedo_color = color
-	material.roughness = 0.55
-	mesh_instance.material_override = material
-	parent.add_child(mesh_instance)
+	var body_material := _paint(paint_color, 0.42, 0.22)
+	var glass_material := _paint(Color("#152b38"), 0.2, 0.28)
+	glass_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var chrome_material := _paint(Color("#aeb9bd"), 0.28, 0.72)
+	var dark_material := _paint(Color("#252b30"), 0.72, 0.08)
+
+	# Sculpted lower body, hood and rear deck.
+	_add_box(visual, Vector3(body_width, 0.67, body_length * 0.94), Vector3(0.0, 0.59, 0.0), paint_color, 0.42, 0.22)
+	_add_box(visual, Vector3(body_width * 0.92, 0.11, body_length * 0.30), Vector3(0.0, 0.91, -body_length * 0.32), paint_color.lightened(0.035), 0.4, 0.2)
+	_add_box(visual, Vector3(body_width * 0.90, 0.10, body_length * 0.22), Vector3(0.0, 0.89, body_length * 0.34), paint_color.darkened(0.025), 0.46, 0.18)
+
+	var roof_y := 1.76
+	var front_z := -0.88
+	var rear_z := 0.78
+	if vehicle_type == "suv":
+		roof_y = 1.88
+		front_z = -1.02
+		rear_z = 0.90
+	elif vehicle_type == "van":
+		roof_y = 2.05
+		front_z = -1.28
+		rear_z = 1.32
+	var cabin_width := body_width * (0.82 if vehicle_type == "van" else 0.79)
+	var profile: Array[Vector2] = [
+		Vector2(-body_length * 0.36, 1.02),
+		Vector2(front_z, roof_y),
+		Vector2(rear_z, roof_y),
+		Vector2(body_length * 0.36, 1.03)
+	]
+	_add_cabin_shell(visual, cabin_width, profile, body_material)
+
+	# Dark, inset side windows with visible pillars.
+	var side_x := cabin_width * 0.5 + 0.012
+	var window_top := roof_y - 0.16
+	var window_bottom := 1.17
+	for side in [-1.0, 1.0]:
+		var x := side * side_x
+		var front_window: Array[Vector3] = [
+			Vector3(x, window_top, front_z + 0.10),
+			Vector3(x, window_top, -0.12),
+			Vector3(x, window_bottom, -0.30),
+			Vector3(x, window_bottom, front_z - 0.18)
+		]
+		_add_quad(visual, front_window[0], front_window[1], front_window[2], front_window[3], glass_material)
+		var rear_window: Array[Vector3] = [
+			Vector3(x, window_top, 0.12),
+			Vector3(x, window_top, rear_z - 0.10),
+			Vector3(x, window_bottom, body_length * 0.30),
+			Vector3(x, window_bottom, 0.30)
+		]
+		_add_quad(visual, rear_window[0], rear_window[1], rear_window[2], rear_window[3], glass_material)
+		_add_box(visual, Vector3(0.035, 0.055, 0.12), Vector3(side * (body_width * 0.5), 0.83, -0.08), chrome_material, 0.3, 0.65)
+
+	# Windshield and rear glass follow the sloped roof line.
+	_add_quad(visual,
+		Vector3(-cabin_width * 0.37, roof_y - 0.13, front_z + 0.04),
+		Vector3(cabin_width * 0.37, roof_y - 0.13, front_z + 0.04),
+		Vector3(body_width * 0.36, 1.10, -body_length * 0.36 - 0.012),
+		Vector3(-body_width * 0.36, 1.10, -body_length * 0.36 - 0.012),
+		glass_material)
+	_add_quad(visual,
+		Vector3(cabin_width * 0.36, roof_y - 0.13, rear_z - 0.04),
+		Vector3(-cabin_width * 0.36, roof_y - 0.13, rear_z - 0.04),
+		Vector3(-body_width * 0.35, 1.11, body_length * 0.36 + 0.012),
+		Vector3(body_width * 0.35, 1.11, body_length * 0.36 + 0.012),
+		glass_material)
+
+	# Bumpers, grille, registration plates and lighting.
+	_add_box(visual, Vector3(body_width * 0.92, 0.16, 0.12), Vector3(0.0, 0.42, -body_length * 0.49), dark_material)
+	_add_box(visual, Vector3(body_width * 0.92, 0.16, 0.12), Vector3(0.0, 0.42, body_length * 0.49), dark_material)
+	_add_box(visual, Vector3(0.62, 0.19, 0.035), Vector3(0.0, 0.62, -body_length * 0.505), dark_material)
+	_add_box(visual, Vector3(0.42, 0.10, 0.025), Vector3(0.0, 0.51, -body_length * 0.52), chrome_material)
+	for side in [-1.0, 1.0]:
+		var headlight := _add_box(visual, Vector3(0.34, 0.14, 0.045), Vector3(side * body_width * 0.34, 0.76, -body_length * 0.49), Color("#f5e8bd"), 0.24, 0.08)
+		var lamp_material := headlight.material_override as StandardMaterial3D
+		lamp_material.emission_enabled = true
+		lamp_material.emission = Color("#ffe7ad") * 0.22
+		_add_box(visual, Vector3(0.30, 0.13, 0.045), Vector3(side * body_width * 0.34, 0.76, body_length * 0.49), Color("#a52e2e"), 0.3, 0.0)
+		_add_box(visual, Vector3(0.07, 0.10, 0.06), Vector3(side * body_width * 0.50, 1.08, -0.66), paint_color.darkened(0.08))
+
+	# Four wheels with metallic hubs.
+	for side in [-1.0, 1.0]:
+		for axle in [-body_length * 0.30, body_length * 0.30]:
+			_add_wheel(visual, side, axle)
+		_add_box(visual, Vector3(0.08, 0.07, 0.22), Vector3(side * body_width * 0.50, 0.82, 0.16), chrome_material, 0.3, 0.7)
+
+	_add_box(visual, Vector3(body_width * 0.84, 0.045, 0.07), Vector3(0.0, roof_y + 0.02, 0.0), paint_color.lightened(0.08), 0.36, 0.18)
+	if vehicle_type == "taxi":
+		_add_box(visual, Vector3(0.46, 0.16, 0.27), Vector3(0.0, roof_y + 0.15, 0.0), Color("#f5cf35"), 0.34, 0.1)
+		_add_box(visual, Vector3(0.42, 0.035, 0.23), Vector3(0.0, roof_y + 0.24, 0.0), Color("#fff1a5"), 0.3, 0.0)
+	if vehicle_type == "van":
+		_add_box(visual, Vector3(0.05, 0.52, 0.04), Vector3(0.0, 1.39, 1.62), paint_color.darkened(0.13), 0.6, 0.0)
 
 func enter_vehicle(player: PlayerController, joystick: TouchJoystick) -> void:
 	if player_driving or player == null:
@@ -147,6 +312,9 @@ func exit_vehicle() -> void:
 	speed = 0.0
 
 func _physics_process(delta: float) -> void:
+	for wheel in wheel_meshes:
+		if is_instance_valid(wheel):
+			wheel.rotation.x -= speed * delta / 0.34
 	if player_driving:
 		_drive_player(delta)
 		return
