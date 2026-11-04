@@ -173,6 +173,8 @@ func _apply_character_colors(body_root: Node3D, character_id: String) -> void:
 		"trousers": character["pants"],
 		"boots": Color("#252b30")
 	}
+	if character_id != "pedestrian" and not GameState.custom_shirt_color.is_empty():
+		palette["shirt"] = Color(GameState.custom_shirt_color)
 	var meshes: Array[MeshInstance3D] = []
 	_collect_mesh_instances(body_root, meshes)
 	for mesh_instance in meshes:
