@@ -119,7 +119,9 @@ func _build_blocks() -> void:
 						height = rng.randf_range(34.0, 56.0)
 					var position := Vector3(center_x + offset_x, height * 0.5 - 0.05, center_z + offset_z)
 					var color: Color = palette[rng.randi_range(0, palette.size() - 1)]
-					_add_building(Vector3(width, height, depth), position, color, downtown)
+					var is_minimarket_lot := block_x == 1 and block_z == 1 and is_equal_approx(float(offset_x), -14.0) and is_equal_approx(float(offset_z), -14.0)
+					if not is_minimarket_lot:
+						_add_building(Vector3(width, height, depth), position, color, downtown)
 
 			_add_tree(Vector3(center_x - 25.0, 0.0, center_z))
 			_add_tree(Vector3(center_x + 25.0, 0.0, center_z))
