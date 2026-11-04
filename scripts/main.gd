@@ -151,6 +151,8 @@ func _on_interaction() -> void:
 		return
 	var nearby := _nearest_vehicle()
 	if nearby != null:
+		if not nearby.crime_committed.is_connected(_on_player_vehicle_crime):
+			nearby.crime_committed.connect(_on_player_vehicle_crime)
 		active_vehicle = nearby
 		if wanted_system != null and nearby.vehicle_type != "police":
 			wanted_system.report_vehicle_theft()
@@ -172,6 +174,10 @@ func _on_store_state_changed(is_inside: bool) -> void:
 func _on_store_status_changed(message: String) -> void:
 	if hud != null:
 		hud.set_context_message(message)
+
+func _on_player_vehicle_crime(severity: int) -> void:
+	if wanted_system != null:
+		wanted_system.report_driving_collision(severity)
 
 func _ensure_input_actions() -> void:
 	_add_key_action("move_forward", KEY_W)
