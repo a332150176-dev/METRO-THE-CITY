@@ -154,7 +154,7 @@ func _build_interior(trim_color: Color) -> void:
 	add_child(interior_root)
 	interior_root.visible = false
 	_add_visual_box(interior_root, Vector3(13.8, 0.06, 13.8), SHOP_CENTER + Vector3(0.0, 0.19, 0.0), Color("#c9c2b4"))
-	_add_visual_box(self, Vector3(13.5, 0.12, 0.16), SHOP_CENTER + Vector3(0.0, 0.38, 6.55), trim_color)
+	_add_visual_box(interior_root, Vector3(13.5, 0.12, 0.16), SHOP_CENTER + Vector3(0.0, 0.38, 6.55), trim_color)
 	_add_visual_box(self, Vector3(0.16, 0.12, 13.2), SHOP_CENTER + Vector3(-6.55, 0.38, 0.0), trim_color)
 	_add_visual_box(self, Vector3(0.16, 0.12, 13.2), SHOP_CENTER + Vector3(6.55, 0.38, 0.0), trim_color)
 
@@ -177,7 +177,7 @@ func _build_interior(trim_color: Color) -> void:
 	counter_label.pixel_size = 0.012
 	counter_label.position = SHOP_CENTER + Vector3(0.0, 2.15, 5.35)
 	counter_label.modulate = Color("#27343b")
-	add_child(counter_label)
+	interior_root.add_child(counter_label)
 
 	_add_visual_box(self, Vector3(0.12, 3.2, 0.12), SHOP_CENTER + Vector3(-6.4, 1.6, -6.0), Color("#d8c69e"))
 	_add_visual_box(self, Vector3(0.12, 3.2, 0.12), SHOP_CENTER + Vector3(6.4, 1.6, -6.0), Color("#d8c69e"))
@@ -188,7 +188,7 @@ func _build_rack(parent: Node3D, center: Vector3, frame_color: Color) -> void:
 		for z_offset in [-3.05, 3.05]:
 			_add_static_box(parent, Vector3(0.1, 2.0, 0.1), center + Vector3(x_offset, 1.0, z_offset), frame_color)
 	for shelf_height in [0.45, 1.05, 1.65]:
-		_add_static_box(self, Vector3(1.2, 0.12, 6.3), center + Vector3(0.0, shelf_height, 0.0), Color("#a58b68"))
+		_add_static_box(parent, Vector3(1.2, 0.12, 6.3), center + Vector3(0.0, shelf_height, 0.0), Color("#a58b68"))
 	_add_visual_box(parent, Vector3(1.28, 0.08, 6.4), center + Vector3(0.0, 2.05, 0.0), Color("#4f5c5d"))
 
 func _add_product_stock(product: Dictionary, parent: Node3D) -> void:
