@@ -16,6 +16,7 @@ var selected_character: String = "noam"
 var sprint_button: Button
 var action_button: Button
 var minimap: CityMiniMap
+var context_label: Label
 
 func show_character_selection() -> void:
 	selected_character = GameState.selected_character
@@ -113,6 +114,18 @@ func show_gameplay() -> void:
 	reputation_label.add_theme_font_size_override("font_size", 17)
 	root.add_child(reputation_label)
 
+	context_label = Label.new()
+	context_label.position = Vector2(330.0, 610.0)
+	context_label.size = Vector2(620.0, 42.0)
+	context_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	context_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	context_label.add_theme_font_size_override("font_size", 18)
+	context_label.add_theme_color_override("font_color", Color("#fff1cf"))
+	context_label.add_theme_color_override("font_shadow_color", Color(0.02, 0.04, 0.06, 0.9))
+	context_label.add_theme_constant_override("shadow_offset_x", 1)
+	context_label.add_theme_constant_override("shadow_offset_y", 1)
+	root.add_child(context_label)
+
 	joystick = TouchJoystick.new()
 	joystick.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	joystick.position = Vector2(24.0, -190.0)
@@ -162,6 +175,19 @@ func set_reputation(value: int) -> void:
 func set_action_label(value: String) -> void:
 	if action_button != null and action_button.text != value:
 		action_button.text = value
+
+
+func set_context_message(message: String) -> void:
+	if context_label != null:
+		context_label.text = message
+
+func set_interior_mode(is_inside: bool) -> void:
+	if minimap != null:
+		minimap.visible = not is_inside
+	if is_inside:
+		set_context_message("מינימרקט  |  בחר מוצר מהמדף, ואז גש לקופה")
+	else:
+		set_context_message("")
 
 
 func set_navigation_sources(player_node: PlayerController, mission_node: MissionManager) -> void:
