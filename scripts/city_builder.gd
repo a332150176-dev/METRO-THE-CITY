@@ -6,6 +6,7 @@ const GRID_SIZE: int = 7
 const GRID_SPACING: float = 76.0
 const ROAD_WIDTH: float = 18.0
 const CITY_EDGE: float = 610.0
+const SUBURBAN_MODEL_LETTERS := ["a", "b", "c", "d", "e", "f", "g", "h"]
 
 var rng := RandomNumberGenerator.new()
 var traffic_controller: TrafficController
@@ -15,14 +16,19 @@ var road_mark_x_transforms: Array[Transform3D] = []
 var road_mark_z_transforms: Array[Transform3D] = []
 var crosswalk_x_transforms: Array[Transform3D] = []
 var crosswalk_z_transforms: Array[Transform3D] = []
+var suburban_meshes: Array[Mesh] = []
+var suburban_materials: Array[Material] = []
+var suburban_transforms: Array = []
 
 func build_city(controller: TrafficController) -> void:
 	traffic_controller = controller
 	rng.seed = 20261104
+	_load_suburban_models()
 	_build_ground()
 	_build_roads()
 	_build_blocks()
 	_build_intersections()
+	_build_suburban_model_batches()
 	_build_batched_details()
 
 func _material(color: Color, roughness: float = 0.88) -> StandardMaterial3D:
@@ -124,7 +130,11 @@ func _build_blocks() -> void:
 					var color: Color = palette[rng.randi_range(0, palette.size() - 1)]
 					var is_minimarket_lot := block_x == int((GRID_SIZE - 2) / 2) and block_z == int((GRID_SIZE - 2) / 2) and is_equal_approx(float(offset_x), -14.0) and is_equal_approx(float(offset_z), -14.0)
 					if not is_minimarket_lot:
-						_add_building(Vector3(width, height, depth), position, color, downtown)
+						var use_authored_model := not downtown and (not mixed or rng.randf() > 0.42) and not suburban_meshes.is_empty()
+						if use_authored_model:
+							_queue_suburban_building(position)
+						else:
+							_add_building(Vector3(width, height, depth), position, color, downtown)
 
 			_add_tree(Vector3(center_x - 25.0, 0.0, center_z))
 			_add_tree(Vector3(center_x + 25.0, 0.0, center_z))
@@ -189,6 +199,90 @@ func _add_building(size: Vector3, position: Vector3, color: Color, downtown: boo
 		_visual_box(building, rooftop_size, Vector3(size.x * 0.22, size.y * 0.5 + rooftop_size.y * 0.5, size.z * 0.18), color.darkened(0.22))
 	if downtown and rng.randf() > 0.5:
 		_visual_box(building, Vector3(size.x * 0.52, 0.3, 0.28), Vector3(0.0, size.y * 0.5 - 1.0, -size.z * 0.5 - 0.16), Color("#344c57"))
+
+func _load_suburban_models() -> void:
+	suburban_meshes.clear()
+	suburban_materials.clear()
+	suburban_transforms.clear()
+	for letter_value in SUBURBAN_MODEL_LETTERS:
+		var letter := str(letter_value)
+		var asset_path := "res://assets/city_models/building-type-%s.glb.b64" % letter
+		if not FileAccess.file_exists(asset_path):
+			continue
+		var encoded := FileAccess.get_file_as_string(asset_path).strip_edges()
+		if encoded.is_empty():
+			continue
+		var binary := Marshalls.base64_to_raw(encoded)
+		var document := GLTFDocument.new()
+		var state := GLTFState.new()
+		var parse_error := document.append_from_buffer(binary, "res://assets/city_models/", 0, state)
+		if parse_error != OK:
+			push_warning("Could not load suburban model %s: %s" % [letter, error_string(parse_error)])
+			continue
+		var model_scene := document.generate_scene(state)
+		if model_scene == null:
+			continue
+		var mesh_instance := _find_mesh_instance(model_scene)
+		if mesh_instance == null or mesh_instance.mesh == null:
+			model_scene.free()
+			continue
+		suburban_meshes.append(mesh_instance.mesh)
+		var source_material := mesh_instance.get_active_material(0)
+		suburban_materials.append(source_material)
+		suburban_transforms.append([])
+		model_scene.free()
+	if suburban_meshes.is_empty():
+		push_warning("No authored suburban building models were loaded; using procedural fallback buildings.")
+
+func _find_mesh_instance(node: Node) -> MeshInstance3D:
+	if node is MeshInstance3D:
+		var candidate := node as MeshInstance3D
+		if candidate.mesh != null:
+			return candidate
+	for child in node.get_children():
+		var found := _find_mesh_instance(child)
+		if found != null:
+			return found
+	return null
+
+func _queue_suburban_building(position: Vector3) -> void:
+	var model_index := rng.randi_range(0, suburban_meshes.size() - 1)
+	var scale_factor := rng.randf_range(9.0, 12.0)
+	var yaw := float(rng.randi_range(0, 3)) * PI * 0.5
+	var model_basis := Basis(Vector3.UP, yaw).scaled(Vector3.ONE * scale_factor)
+	var model_transform := Transform3D(model_basis, Vector3(position.x, 0.04, position.z))
+	suburban_transforms[model_index].append(model_transform)
+
+	# Keep collision simple; the textured, authored mesh is rendered in a shared batch.
+	var body := StaticBody3D.new()
+	body.position = Vector3(position.x, 6.8, position.z)
+	add_child(body)
+	var collision := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(17.5, 13.6, 15.5)
+	collision.shape = shape
+	body.add_child(collision)
+
+func _build_suburban_model_batches() -> void:
+	for model_index in range(suburban_meshes.size()):
+		var transforms: Array = suburban_transforms[model_index]
+		if transforms.is_empty():
+			continue
+		var multi := MultiMesh.new()
+		multi.transform_format = MultiMesh.TRANSFORM_3D
+		multi.mesh = suburban_meshes[model_index]
+		multi.instance_count = transforms.size()
+		for index in range(transforms.size()):
+			multi.set_instance_transform(index, transforms[index])
+		var instance := MultiMeshInstance3D.new()
+		instance.multimesh = multi
+		if suburban_materials[model_index] != null:
+			instance.material_override = suburban_materials[model_index]
+		instance.custom_aabb = AABB(
+			Vector3(-CITY_EDGE * 0.5, -1.0, -CITY_EDGE * 0.5),
+			Vector3(CITY_EDGE, 90.0, CITY_EDGE)
+		)
+		add_child(instance)
 
 func _add_tree(position: Vector3) -> void:
 	var trunk := _box(self, Vector3(0.42, 2.4, 0.42), position + Vector3(0.0, 1.2, 0.0), Color("#71543b"))
