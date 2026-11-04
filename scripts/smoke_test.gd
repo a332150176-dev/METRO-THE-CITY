@@ -37,6 +37,11 @@ func _run_smoke_test() -> void:
 		push_error("Smoke test: authored suburban building models did not load")
 		quit(1)
 		return
+	var downtown_models: Array = city_node.get("downtown_meshes")
+	if downtown_models.size() < 5:
+		push_error("Smoke test: five downtown skyscraper models did not load")
+		quit(1)
+		return
 	var traffic := game.get_node_or_null("CityTraffic")
 	if traffic == null or traffic.cars.size() < 12 or traffic.pedestrians.size() < 24:
 		push_error("Smoke test: traffic or pedestrian population did not initialize")
@@ -137,5 +142,5 @@ func _run_smoke_test() -> void:
 		quit(1)
 		return
 
-	print("METRO smoke test passed: 7x7 city, eight textured building models, eight authored vehicles, traffic, campaign, vehicles, interactive store, checkout and persistent inventory")
+	print("METRO smoke test passed: 7x7 city, eight textured suburban buildings, five textured skyscrapers, eight authored vehicles, traffic, campaign, vehicles, interactive store, checkout and persistent inventory")
 	quit(0)
