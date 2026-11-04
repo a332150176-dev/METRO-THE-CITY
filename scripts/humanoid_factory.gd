@@ -68,6 +68,7 @@ func create_character(character_id: String = "noam") -> Node3D:
 	_hide_covered_skin(body_instance)
 
 	var animation_source: Node = (packed_scenes["movement"] as PackedScene).instantiate()
+	_clear_scene_owners(animation_source)
 	var source_player := _find_animation_player(animation_source)
 	if source_player != null:
 		source_player.owner = null
@@ -95,6 +96,7 @@ func _attach_part(body_root: Node3D, body_skeleton: Skeleton3D, part_key: String
 	var part_root: Node = (packed_scenes[part_key] as PackedScene).instantiate()
 	if part_root == null:
 		return
+	_clear_scene_owners(part_root)
 	var part_skeleton := _find_skeleton(part_root)
 	if part_skeleton == null:
 		part_root.free()
@@ -102,12 +104,17 @@ func _attach_part(body_root: Node3D, body_skeleton: Skeleton3D, part_key: String
 	var meshes: Array[MeshInstance3D] = []
 	_collect_skinned_meshes(part_skeleton, meshes)
 	for mesh_instance in meshes:
-		mesh_instance.owner = null
 		part_skeleton.remove_child(mesh_instance)
+		mesh_instance.owner = null
 		body_root.add_child(mesh_instance)
 		mesh_instance.skeleton = mesh_instance.get_path_to(body_skeleton)
 		mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	part_root.free()
+
+func _clear_scene_owners(node: Node) -> void:
+	node.owner = null
+	for child in node.get_children():
+		_clear_scene_owners(child)
 
 func _apply_character_colors(body_root: Node3D, character_id: String) -> void:
 	var character := CharacterCatalog.get_character(character_id)
@@ -180,7 +187,7 @@ func _collect_mesh_instances(node: Node, output: Array[MeshInstance3D]) -> void:
 func _collect_skinned_meshes(node: Node, output: Array[MeshInstance3D]) -> void:
 	if node is MeshInstance3D:
 		var mesh_instance := node as MeshInstance3D
-		if mesh_instance.skin != null:
+		if mesh_instance.mesh != null and mesh_instance.skin != null:
 			output.append(mesh_instance)
 	for child in node.get_children():
 		_collect_skinned_meshes(child, output)
