@@ -147,7 +147,8 @@ func _refresh_actor_simulation() -> void:
 		if not is_instance_valid(car) or car.is_queued_for_deletion():
 			continue
 		var car_position := Vector2(car.global_position.x, car.global_position.z)
-		var car_active := car.player_driving or player_position.distance_to(car_position) <= simulation_radius
+		var pursuing_player := car.pursuit_target != null and is_instance_valid(car.pursuit_target)
+		var car_active := car.player_driving or pursuing_player or player_position.distance_to(car_position) <= simulation_radius
 		if car.is_physics_processing() != car_active:
 			car.set_physics_process(car_active)
 	for pedestrian in pedestrians:
