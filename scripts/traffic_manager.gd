@@ -15,7 +15,7 @@ var simulation_clock: float = 0.0
 var player_tracker: Node3D
 var simulation_radius: float = 190.0
 var target_car_count: int = 14
-var vehicle_types: Array[String] = ["sedan", "suv", "van", "taxi", "sedan", "suv", "sedan", "delivery", "police"]
+var vehicle_types: Array[String] = ["sedan", "suv", "sedan", "van", "sedan", "taxi", "sedan", "suv", "sedan", "delivery", "sedan", "police", "sedan", "ambulance", "sedan", "van", "sedan", "suv", "sedan", "taxi", "sedan", "sedan", "firetruck", "sedan"]
 var vehicle_scenes: Dictionary = {}
 var car_colors: Array[Color] = [
 	Color("#24799a"), Color("#c2c6c5"), Color("#b64d3b"),
