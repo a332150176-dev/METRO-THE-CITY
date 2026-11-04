@@ -1,0 +1,44 @@
+name: Build Android test APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "project.godot"
+      - "export_presets.cfg"
+      - "scenes/**"
+      - "scripts/**"
+      - ".github/workflows/android-apk.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.3
+    steps:
+      - name: Check out game source
+        uses: actions/checkout@v4
+
+      - name: Import project resources
+        run: godot --headless --editor --path . --quit
+
+      - name: Export Android debug APK
+        run: |
+          mkdir -p build
+          export PATH="$ANDROID_HOME/build-tools/34.0.0:$PATH"
+          godot --headless --path . --export-debug "Android" build/METRO_THE_CITY_test.apk
+          test -s build/METRO_THE_CITY_test.apk
+          unzip -t build/METRO_THE_CITY_test.apk
+          apksigner verify --verbose build/METRO_THE_CITY_test.apk
+
+      - name: Upload APK for device testing
+        uses: actions/upload-artifact@v4
+        with:
+          name: METRO-THE-CITY-Android-test-APK
+          path: build/METRO_THE_CITY_test.apk
+          if-no-files-found: error
+          retention-days: 14
