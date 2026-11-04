@@ -8,6 +8,7 @@ const PLAYER_SCRIPT := preload("res://scripts/player_controller.gd")
 const HUD_SCRIPT := preload("res://scripts/game_hud.gd")
 const MISSION_SCRIPT := preload("res://scripts/mission_manager.gd")
 const STORE_SCRIPT := preload("res://scripts/store_system.gd")
+const WANTED_SCRIPT := preload("res://scripts/wanted_system.gd")
 
 var road_network: RoadNetwork
 var traffic_controller: TrafficController
@@ -17,6 +18,7 @@ var active_vehicle: TrafficCar
 var hud: GameHUD
 var mission_manager: MissionManager
 var store_system: StoreSystem
+var wanted_system: WantedSystem
 
 func _ready() -> void:
 	_ensure_input_actions()
@@ -97,6 +99,12 @@ func _start_game(character_id: String) -> void:
 	player.configure(character_id)
 	store_system.configure(player)
 	traffic_manager.set_player_tracker(player)
+	wanted_system = WANTED_SCRIPT.new()
+	wanted_system.name = "WantedSystem"
+	add_child(wanted_system)
+	wanted_system.configure(player, traffic_manager)
+	wanted_system.wanted_level_changed.connect(hud.set_wanted_level)
+	wanted_system.status_changed.connect(_on_store_status_changed)
 	player.global_position = Vector3(-65.0, 0.05, -65.0)
 
 	hud.show_gameplay()
@@ -144,6 +152,8 @@ func _on_interaction() -> void:
 	var nearby := _nearest_vehicle()
 	if nearby != null:
 		active_vehicle = nearby
+		if wanted_system != null and nearby.vehicle_type != "police":
+			wanted_system.report_vehicle_theft()
 		if mission_manager != null:
 			mission_manager.vehicle = active_vehicle
 		active_vehicle.enter_vehicle(player, hud.get_joystick())
