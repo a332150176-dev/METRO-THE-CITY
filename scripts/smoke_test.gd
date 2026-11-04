@@ -95,7 +95,7 @@ func _run_smoke_test() -> void:
 		push_error("Smoke test: vehicle theft did not dispatch a police unit")
 		quit(1)
 		return
-	var police_car := traffic.police_units[0]
+	var police_car: TrafficCar = traffic.police_units[0] as TrafficCar
 	if police_car.pursuit_target != game.player or police_car.vehicle_type != "police":
 		push_error("Smoke test: police unit did not start pursuing the player")
 		quit(1)
