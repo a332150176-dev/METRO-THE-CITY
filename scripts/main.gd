@@ -7,6 +7,7 @@ const TRAFFIC_SCRIPT := preload("res://scripts/traffic_manager.gd")
 const PLAYER_SCRIPT := preload("res://scripts/player_controller.gd")
 const HUD_SCRIPT := preload("res://scripts/game_hud.gd")
 const MISSION_SCRIPT := preload("res://scripts/mission_manager.gd")
+const STORE_SCRIPT := preload("res://scripts/store_system.gd")
 
 var road_network: RoadNetwork
 var traffic_controller: TrafficController
@@ -15,6 +16,7 @@ var player: PlayerController
 var active_vehicle: TrafficCar
 var hud: GameHUD
 var mission_manager: MissionManager
+var store_system: StoreSystem
 
 func _ready() -> void:
 	_ensure_input_actions()
@@ -30,6 +32,11 @@ func _ready() -> void:
 	add_child(city)
 	city.build_city(traffic_controller)
 
+	store_system = STORE_SCRIPT.new()
+	store_system.name = "InteractiveStores"
+	add_child(store_system)
+	store_system.store_state_changed.connect(_on_store_state_changed)
+
 	traffic_manager = TRAFFIC_SCRIPT.new()
 	traffic_manager.name = "CityTraffic"
 	add_child(traffic_manager)
@@ -42,12 +49,15 @@ func _ready() -> void:
 	hud.show_character_selection()
 	GameState.money_changed.connect(hud.set_money)
 	GameState.reputation_changed.connect(hud.set_reputation)
+	store_system.status_changed.connect(_on_store_status_changed)
 
 func _process(_delta: float) -> void:
 	if hud == null or player == null:
 		return
 	if active_vehicle != null and is_instance_valid(active_vehicle):
 		hud.set_action_label("יציאה מהרכב")
+	elif store_system != null and not store_system.get_action_label().is_empty():
+		hud.set_action_label(store_system.get_action_label())
 	elif _nearest_vehicle() != null:
 		hud.set_action_label("כניסה לרכב")
 	else:
@@ -85,6 +95,7 @@ func _start_game(character_id: String) -> void:
 	player.name = "Player"
 	add_child(player)
 	player.configure(character_id)
+	store_system.configure(player)
 	player.global_position = Vector3(-65.0, 0.05, -65.0)
 
 	hud.show_gameplay()
@@ -127,6 +138,8 @@ func _on_interaction() -> void:
 			mission_manager.vehicle = null
 		active_vehicle = null
 		return
+	if store_system != null and store_system.try_interact():
+		return
 	var nearby := _nearest_vehicle()
 	if nearby != null:
 		active_vehicle = nearby
@@ -134,7 +147,20 @@ func _on_interaction() -> void:
 			mission_manager.vehicle = active_vehicle
 		active_vehicle.enter_vehicle(player, hud.get_joystick())
 	else:
-		player.request_interaction()
+		hud.set_context_message("אין פעולה זמינה בקרבת מקום.")
+
+func _on_store_state_changed(is_inside: bool) -> void:
+	if traffic_manager != null:
+		traffic_manager.visible = not is_inside
+		traffic_manager.process_mode = Node.PROCESS_MODE_DISABLED if is_inside else Node.PROCESS_MODE_INHERIT
+	if mission_manager != null:
+		mission_manager.process_mode = Node.PROCESS_MODE_DISABLED if is_inside else Node.PROCESS_MODE_INHERIT
+	if hud != null:
+		hud.set_interior_mode(is_inside)
+
+func _on_store_status_changed(message: String) -> void:
+	if hud != null:
+		hud.set_context_message(message)
 
 func _ensure_input_actions() -> void:
 	_add_key_action("move_forward", KEY_W)
