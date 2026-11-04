@@ -4,7 +4,7 @@ class_name CityMiniMap
 var player: PlayerController
 var missions: MissionManager
 var refresh_clock: float = 0.0
-var map_radius: float = 265.0
+var map_radius: float = float(RoadNetwork.GRID_SIZE - 1) * 38.0 + 36.0
 
 func set_sources(player_node: PlayerController, mission_node: MissionManager) -> void:
 	player = player_node
