@@ -10,7 +10,7 @@ var lights: TrafficController
 var cars: Array[TrafficCar] = []
 var pedestrians: Array[CityPedestrian] = []
 var spawn_clock: float = 0.0
-var target_car_count: int = 9
+var target_car_count: int = 12
 var car_colors: Array[Color] = [
 	Color("#24799a"), Color("#c2c6c5"), Color("#b64d3b"),
 	Color("#d4a843"), Color("#343b43"), Color("#6d8a6f")
@@ -26,7 +26,7 @@ func configure(road_network: RoadNetwork, controller: TrafficController) -> void
 	rng.seed = 884422
 	for i in range(target_car_count):
 		_spawn_one_car(i)
-	_spawn_pedestrians(18)
+	_spawn_pedestrians(24)
 
 func _process(delta: float) -> void:
 	for i in range(cars.size() - 1, -1, -1):
@@ -38,10 +38,10 @@ func _process(delta: float) -> void:
 		_spawn_one_car(rng.randi_range(0, 1000))
 
 func _spawn_one_car(seed_value: int) -> void:
-	var start_id := seed_value if seed_value >= 0 and seed_value < 9 else rng.randi_range(0, 8)
-	var goal_id := rng.randi_range(0, 8)
+	var start_id := seed_value if seed_value >= 0 and seed_value < 25 else rng.randi_range(0, 24)
+	var goal_id := rng.randi_range(0, 24)
 	while goal_id == start_id:
-		goal_id = rng.randi_range(0, 8)
+		goal_id = rng.randi_range(0, 24)
 	var car: TrafficCar = CAR_SCRIPT.new()
 	car.name = "TrafficCar_%02d" % (seed_value % 1000)
 	var lane := 3.0 if seed_value % 2 == 0 else -3.0
@@ -59,15 +59,15 @@ func _spawn_pedestrians(count: int) -> void:
 
 func _make_sidewalk_route(seed_offset: int) -> PackedVector3Array:
 	var points := PackedVector3Array()
-	var road_line := float(rng.randi_range(-1, 1)) * 76.0
+	var road_line := float(rng.randi_range(-2, 2)) * 76.0
 	var side := -1.0 if seed_offset % 2 == 0 else 1.0
 	var lane := road_line + side * 11.5
-	var start := rng.randf_range(-76.0, 76.0)
+	var start := rng.randf_range(-152.0, 152.0)
 	points.append(Vector3(start, 0.05, lane))
-	points.append(Vector3(76.0, 0.05, lane))
-	points.append(Vector3(76.0, 0.05, lane + side * 8.0))
-	points.append(Vector3(-76.0, 0.05, lane + side * 8.0))
-	points.append(Vector3(-76.0, 0.05, lane))
+	points.append(Vector3(152.0, 0.05, lane))
+	points.append(Vector3(152.0, 0.05, lane + side * 8.0))
+	points.append(Vector3(-152.0, 0.05, lane + side * 8.0))
+	points.append(Vector3(-152.0, 0.05, lane))
 	return points
 
 func lead_distance(source: TrafficCar, direction: Vector3) -> float:

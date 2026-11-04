@@ -4,7 +4,7 @@ class_name CityMiniMap
 var player: PlayerController
 var missions: MissionManager
 var refresh_clock: float = 0.0
-var map_radius: float = 86.0
+var map_radius: float = 174.0
 
 func set_sources(player_node: PlayerController, mission_node: MissionManager) -> void:
 	player = player_node
@@ -35,19 +35,23 @@ func _draw() -> void:
 	var center := size * 0.5
 	var scale := minf(size.x, size.y) / (map_radius * 2.0)
 
-	for block_x in [-38.0, 38.0]:
-		for block_z in [-38.0, 38.0]:
-			var block_center := center + Vector2(block_x, block_z) * scale
+	for block_x in range(4):
+		for block_z in range(4):
+			var world_x := -114.0 + block_x * 76.0
+			var world_z := -114.0 + block_z * 76.0
+			var block_center := center + Vector2(world_x, world_z) * scale
 			var block_rect := Rect2(block_center - Vector2(15.0, 15.0) * scale, Vector2(30.0, 30.0) * scale)
-			draw_rect(block_rect, Color("#1c3440"), true)
+			var is_downtown := block_x >= 1 and block_x <= 2 and block_z >= 1 and block_z <= 2
+			draw_rect(block_rect, Color("#344b58") if is_downtown else Color("#1c3440"), true)
 
-	for road in [-76.0, 0.0, 76.0]:
+	for grid in range(5):
+		var road := -152.0 + grid * 76.0
 		var x: float = center.x + road * scale
 		var z: float = center.y + road * scale
-		draw_line(Vector2(x, 4.0), Vector2(x, size.y - 4.0), Color("#6c7d87"), 8.0, true)
-		draw_line(Vector2(4.0, z), Vector2(size.x - 4.0, z), Color("#6c7d87"), 8.0, true)
-		draw_line(Vector2(x, 4.0), Vector2(x, size.y - 4.0), Color("#c0c5c3"), 0.8, true)
-		draw_line(Vector2(4.0, z), Vector2(size.x - 4.0, z), Color("#c0c5c3"), 0.8, true)
+		draw_line(Vector2(x, 4.0), Vector2(x, size.y - 4.0), Color("#6c7d87"), 6.0, true)
+		draw_line(Vector2(4.0, z), Vector2(size.x - 4.0, z), Color("#6c7d87"), 6.0, true)
+		draw_line(Vector2(x, 4.0), Vector2(x, size.y - 4.0), Color("#c0c5c3"), 0.7, true)
+		draw_line(Vector2(4.0, z), Vector2(size.x - 4.0, z), Color("#c0c5c3"), 0.7, true)
 
 	if missions != null and missions.current_index < missions.missions.size():
 		var mission: Dictionary = missions.missions[missions.current_index]

@@ -18,9 +18,13 @@ func _run_smoke_test() -> void:
 		push_error("Smoke test: road network was not initialized")
 		quit(1)
 		return
-	var route: PackedVector3Array = game.road_network.build_route(0, 8)
+	var route: PackedVector3Array = game.road_network.build_route(0, 24)
 	if route.size() < 5:
-		push_error("Smoke test: 3x3 route generation failed")
+		push_error("Smoke test: 5x5 route generation failed")
+		quit(1)
+		return
+	if game.road_network.all_intersections().size() != 25:
+		push_error("Smoke test: expanded city does not contain 25 intersections")
 		quit(1)
 		return
 	if game.get_node_or_null("ProceduralCity") == null:
@@ -28,7 +32,7 @@ func _run_smoke_test() -> void:
 		quit(1)
 		return
 	var traffic := game.get_node_or_null("CityTraffic")
-	if traffic == null or traffic.cars.size() < 9 or traffic.pedestrians.size() < 18:
+	if traffic == null or traffic.cars.size() < 12 or traffic.pedestrians.size() < 24:
 		push_error("Smoke test: traffic or pedestrian population did not initialize")
 		quit(1)
 		return
@@ -82,9 +86,9 @@ func _run_smoke_test() -> void:
 		return
 	test_car.exit_vehicle()
 	if test_car.player_driving or not game.player.visible:
-		push_error("Smoke test: player could not exit the vehicle")
+		push_error("Smoke test: player could not exit a vehicle")
 		quit(1)
 		return
 
-	print("METRO smoke test passed: city, routes, AI, campaign, customization, jump, vehicle driving and mission completion")
+	print("METRO smoke test passed: 5x5 city, roads, AI, campaign, customization, jump, vehicle driving and mission completion")
 	quit(0)

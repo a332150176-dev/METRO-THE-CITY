@@ -1,13 +1,14 @@
 extends RefCounted
 class_name RoadNetwork
 
-const GRID_SIZE: int = 3
+const GRID_SIZE: int = 5
 const SPACING: float = 76.0
 const TURN_RADIUS: float = 7.0
 
 func intersection_position(id: int) -> Vector3:
 	var cell := Vector2i(id % GRID_SIZE, int(id / GRID_SIZE))
-	return Vector3((cell.x - 1) * SPACING, 0.0, (cell.y - 1) * SPACING)
+	var center_offset := float(GRID_SIZE - 1) * 0.5
+	return Vector3((float(cell.x) - center_offset) * SPACING, 0.0, (float(cell.y) - center_offset) * SPACING)
 
 func all_intersections() -> Array[Vector3]:
 	var result: Array[Vector3] = []
@@ -16,8 +17,9 @@ func all_intersections() -> Array[Vector3]:
 	return result
 
 func shortest_path(start_id: int, goal_id: int) -> Array[int]:
-	var start := clampi(start_id, 0, 8)
-	var goal := clampi(goal_id, 0, 8)
+	var last_id := GRID_SIZE * GRID_SIZE - 1
+	var start := clampi(start_id, 0, last_id)
+	var goal := clampi(goal_id, 0, last_id)
 	var queue: Array[int] = [start]
 	var previous: Dictionary = {start: -1}
 	while not queue.is_empty():
@@ -87,8 +89,9 @@ func build_route(start_id: int, goal_id: int, lane_offset: float = 3.1) -> Packe
 func nearest_intersection(position: Vector3) -> Dictionary:
 	var best_id := 0
 	var best_distance := INF
-	for id in range(9):
-		var distance := Vector2(position.x, position.z).distance_to(Vector2(intersection_position(id).x, intersection_position(id).z))
+	for id in range(GRID_SIZE * GRID_SIZE):
+		var point := intersection_position(id)
+		var distance := Vector2(position.x, position.z).distance_to(Vector2(point.x, point.z))
 		if distance < best_distance:
 			best_distance = distance
 			best_id = id
