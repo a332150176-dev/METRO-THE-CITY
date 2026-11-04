@@ -41,13 +41,19 @@ func _ready() -> void:
 
 func _match_vehicle_dimensions() -> void:
 	match vehicle_type:
-		"van":
-			body_length = 4.9
-			body_width = 1.95
+		"van", "delivery":
+			body_length = 5.0
+			body_width = 2.0
+		"ambulance":
+			body_length = 5.3
+			body_width = 2.05
+		"firetruck":
+			body_length = 6.6
+			body_width = 2.35
 		"suv":
 			body_length = 4.55
 			body_width = 1.95
-		"taxi":
+		"taxi", "police":
 			body_length = 4.25
 			body_width = 1.85
 		_:
@@ -181,12 +187,14 @@ func _build_vehicle() -> void:
 		var authored_model := authored_scene.instantiate() as Node3D
 		if authored_model != null:
 			authored_model.name = "AuthoredVehicleModel"
-			var scale_y := 1.45
-			var scale_z := 1.55
-			if vehicle_type == "van" or vehicle_type == "delivery" or vehicle_type == "ambulance" or vehicle_type == "firetruck":
-				scale_y = 1.28
-				scale_z = 1.35
-			authored_model.scale = Vector3(1.2, scale_y, scale_z)
+			var model_scale := Vector3(1.2, 1.45, 1.55)
+			if vehicle_type == "van" or vehicle_type == "delivery":
+				model_scale = Vector3(1.22, 1.28, 1.38)
+			elif vehicle_type == "ambulance":
+				model_scale = Vector3(1.25, 1.3, 1.32)
+			elif vehicle_type == "firetruck":
+				model_scale = Vector3(1.45, 1.25, 1.55)
+			authored_model.scale = model_scale
 			# The source vehicles face +Z; METRO driving uses -Z as forward.
 			authored_model.rotation.y = PI
 			visual.add_child(authored_model)
