@@ -4,7 +4,7 @@ class_name CityMiniMap
 var player: PlayerController
 var missions: MissionManager
 var refresh_clock: float = 0.0
-var map_radius: float = 174.0
+var map_radius: float = 265.0
 
 func set_sources(player_node: PlayerController, mission_node: MissionManager) -> void:
 	player = player_node
@@ -35,17 +35,20 @@ func _draw() -> void:
 	var center := size * 0.5
 	var scale := minf(size.x, size.y) / (map_radius * 2.0)
 
-	for block_x in range(4):
-		for block_z in range(4):
-			var world_x := -114.0 + block_x * 76.0
-			var world_z := -114.0 + block_z * 76.0
+	var block_center_offset := float(RoadNetwork.GRID_SIZE - 2) * 0.5
+	for block_x in range(RoadNetwork.GRID_SIZE - 1):
+		for block_z in range(RoadNetwork.GRID_SIZE - 1):
+			var world_x := (float(block_x) - block_center_offset) * 76.0
+			var world_z := (float(block_z) - block_center_offset) * 76.0
 			var block_center := center + Vector2(world_x, world_z) * scale
 			var block_rect := Rect2(block_center - Vector2(15.0, 15.0) * scale, Vector2(30.0, 30.0) * scale)
-			var is_downtown := block_x >= 1 and block_x <= 2 and block_z >= 1 and block_z <= 2
+			var district_center := int((RoadNetwork.GRID_SIZE - 2) / 2)
+			var is_downtown := block_x >= district_center and block_x <= district_center + 1 and block_z >= district_center and block_z <= district_center + 1
 			draw_rect(block_rect, Color("#344b58") if is_downtown else Color("#1c3440"), true)
 
-	for grid in range(5):
-		var road := -152.0 + grid * 76.0
+	for grid in range(RoadNetwork.GRID_SIZE):
+		var grid_center_offset := float(RoadNetwork.GRID_SIZE - 1) * 0.5
+		var road := (float(grid) - grid_center_offset) * 76.0
 		var x: float = center.x + road * scale
 		var z: float = center.y + road * scale
 		draw_line(Vector2(x, 4.0), Vector2(x, size.y - 4.0), Color("#6c7d87"), 6.0, true)
