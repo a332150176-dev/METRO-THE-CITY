@@ -119,6 +119,10 @@ func _run_smoke_test() -> void:
 		push_error("Smoke test: interactive minimarket was not created")
 		quit(1)
 		return
+	if store.product_models.size() < 7:
+		push_error("Smoke test: authored food and drink models did not load")
+		quit(1)
+		return
 	store.configure(game.player)
 	game_state.add_reward(50, 0)
 	game.player.global_position = store.get_door_position()
@@ -142,5 +146,5 @@ func _run_smoke_test() -> void:
 		quit(1)
 		return
 
-	print("METRO smoke test passed: 7x7 city, eight textured suburban buildings, five textured skyscrapers, eight authored vehicles, traffic, campaign, vehicles, interactive store, checkout and persistent inventory")
+	print("METRO smoke test passed: 7x7 city, eight textured suburban buildings, five textured skyscrapers, eight authored vehicles, traffic, campaign, vehicles, interactive store with 3D products, checkout and persistent inventory")
 	quit(0)
