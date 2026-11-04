@@ -9,13 +9,24 @@ fetch_git_blob() {
   local destination="$2"
   local expected="$3"
   echo "Downloading $(basename "$destination")"
-  curl -fL --retry 3 --retry-delay 2 "$url" -o "$destination"
-  local actual
-  actual="$(git -C "$ROOT" hash-object "$destination")"
-  if [[ "$actual" != "$expected" ]]; then
-    echo "Asset checksum mismatch for $destination: expected $expected, got $actual" >&2
-    exit 1
-  fi
+  node --input-type=module - "$url" "$destination" "$expected" <<'NODE'
+import { createHash } from 'node:crypto';
+import { writeFile } from 'node:fs/promises';
+
+const [url, destination, expected] = process.argv.slice(2);
+const response = await fetch(url, { redirect: 'follow' });
+if (!response.ok) {
+  throw new Error(`Download failed (${response.status}): ${url}`);
+}
+const data = Buffer.from(await response.arrayBuffer());
+const gitHeader = Buffer.from(`blob ${data.length}\0`);
+const actual = createHash('sha1').update(gitHeader).update(data).digest('hex');
+if (actual !== expected) {
+  throw new Error(`Asset checksum mismatch for ${destination}: expected ${expected}, got ${actual}`);
+}
+await writeFile(destination, data);
+console.log(`Verified ${destination} (${data.length.toLocaleString()} bytes)`);
+NODE
 }
 
 BASE="https://raw.githubusercontent.com/HelloClyde/tesla-media-center/master/web/public"
