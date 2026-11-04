@@ -20,7 +20,7 @@
 
 The first APK was deliberately a compatibility and gameplay test. It demonstrated that the Android export installs and runs on the M36 Plus. It is not the intended visual quality bar.
 
-The current project uses Godot 4.3 Compatibility renderer. The city road graph now uses a 7×7 intersection grid (49 intersections) with six blocks in each direction. One commercial lot is reserved for an enterable minimarket with shelves, product selection, checkout and saved inventory. Distant cars and pedestrians are paused outside a 190 m player radius; interior visits pause city traffic and hide the minimap.
+The current project uses Godot 4.3 Compatibility renderer. The city road graph now uses a 9×9 intersection grid (81 intersections) with eight blocks in each direction (64 continuous blocks). The residential districts use eight authored CC0 building models, and downtown uses five separate textured skyscraper models. One commercial lot is reserved for an enterable minimarket with authored 3D food/drink stock, product selection, checkout and saved inventory. Eight authored CC0 vehicle models provide civilian, delivery and emergency traffic. Vehicle theft triggers a wanted level and dispatches up to three police pursuit cars. Distant cars and pedestrians are paused outside a 190 m player radius; interior visits pause city traffic and hide the minimap.
 
 ## Performance rules
 
@@ -44,12 +44,12 @@ The current project uses Godot 4.3 Compatibility renderer. The city road graph n
 - Add selected enterable interiors and transitions. (Initial minimarket interior and purchase loop are implemented.)
 
 ### Phase 3 — Systems
-- Build a police response and wanted-level system.
+- Extend police response with pursuit escalation, escape and wanted-level systems. (Initial five-star wanted level, dispatch, road pursuit and distance-based decay are implemented.)
 - Improve character creator, clothing and appearance persistence.
 - Add activity progression, save/load and Hebrew interface polish.
 
 ### Phase 4 — Visual and device optimization
-- Add authored or licensed low-poly/realistic assets where possible.
+- Add authored or licensed low-poly/realistic assets where possible. (Initial suburban, downtown, vehicle and shop food models are integrated.)
 - Add LOD, visibility ranges, pooled traffic and distance-based pedestrian simulation.
 - Profile frame time, memory, heat and controls on the M36 Plus.
 
