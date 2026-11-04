@@ -12,10 +12,14 @@ var left_leg: Node3D
 var right_leg: Node3D
 var torso: MeshInstance3D
 var skin_color: Color = Color("#c78d6b")
+var humanoid_factory: HumanoidFactory
+var rigged_model: Node3D
+var rigged_animation: AnimationPlayer
 
-func setup(points: PackedVector3Array, color: Color) -> void:
+func setup(points: PackedVector3Array, color: Color, factory: HumanoidFactory = null) -> void:
 	waypoints = points
 	shirt_color = color
+	humanoid_factory = factory
 	if waypoints.size() > 0:
 		position = waypoints[0]
 		waypoint_index = 1 if waypoints.size() > 1 else 0
@@ -71,6 +75,16 @@ func _build_person() -> void:
 	collider.shape = capsule
 	collider.position.y = 0.86
 	add_child(collider)
+
+	if humanoid_factory != null:
+		rigged_model = humanoid_factory.create_character("pedestrian")
+		if rigged_model != null:
+			rigged_model.name = "RiggedPedestrian"
+			add_child(rigged_model)
+			rigged_animation = rigged_model.find_child("CharacterAnimationPlayer", true, false) as AnimationPlayer
+			if rigged_animation != null and rigged_animation.has_animation("Walking_A"):
+				rigged_animation.play("Walking_A")
+			return
 
 	var skin_tones: Array[Color] = [Color("#e0b18e"), Color("#c98e6c"), Color("#a96f52"), Color("#81533f")]
 	var rng := RandomNumberGenerator.new()
@@ -162,7 +176,10 @@ func _physics_process(delta: float) -> void:
 	velocity.y = 0.0
 	rotation.y = lerp_angle(rotation.y, atan2(-direction.x, -direction.z), minf(1.0, delta * 4.0))
 	walk_phase += delta * 8.0
-	if left_arm != null:
+	if rigged_animation != null:
+		if rigged_animation.has_animation("Walking_A") and rigged_animation.current_animation != "Walking_A":
+			rigged_animation.play("Walking_A", 0.16)
+	elif left_arm != null:
 		left_arm.rotation.x = sin(walk_phase) * 0.42
 		right_arm.rotation.x = -sin(walk_phase) * 0.42
 		left_leg.rotation.x = -sin(walk_phase) * 0.48
