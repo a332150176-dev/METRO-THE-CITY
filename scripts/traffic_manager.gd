@@ -39,10 +39,11 @@ func _process(delta: float) -> void:
 		_spawn_one_car(rng.randi_range(0, 1000))
 
 func _spawn_one_car(seed_value: int) -> void:
-	var start_id := seed_value if seed_value >= 0 and seed_value < 25 else rng.randi_range(0, 24)
-	var goal_id := rng.randi_range(0, 24)
+	var intersection_count := network.GRID_SIZE * network.GRID_SIZE
+	var start_id := seed_value if seed_value >= 0 and seed_value < intersection_count else rng.randi_range(0, intersection_count - 1)
+	var goal_id := rng.randi_range(0, intersection_count - 1)
 	while goal_id == start_id:
-		goal_id = rng.randi_range(0, 24)
+		goal_id = rng.randi_range(0, intersection_count - 1)
 	var car: TrafficCar = CAR_SCRIPT.new()
 	car.name = "TrafficCar_%02d" % (seed_value % 1000)
 	var lane := 3.0 if seed_value % 2 == 0 else -3.0
@@ -60,15 +61,17 @@ func _spawn_pedestrians(count: int) -> void:
 
 func _make_sidewalk_route(seed_offset: int) -> PackedVector3Array:
 	var points := PackedVector3Array()
-	var road_line := float(rng.randi_range(-2, 2)) * 76.0
+	var center_index := int((network.GRID_SIZE - 1) / 2)
+	var road_line := float(rng.randi_range(0, network.GRID_SIZE - 1) - center_index) * 76.0
 	var side := -1.0 if seed_offset % 2 == 0 else 1.0
 	var lane := road_line + side * 11.5
-	var start := rng.randf_range(-152.0, 152.0)
+	var road_edge := float(network.GRID_SIZE - 1) * 0.5 * 76.0
+	var start := rng.randf_range(-road_edge, road_edge)
 	points.append(Vector3(start, 0.05, lane))
-	points.append(Vector3(152.0, 0.05, lane))
-	points.append(Vector3(152.0, 0.05, lane + side * 8.0))
-	points.append(Vector3(-152.0, 0.05, lane + side * 8.0))
-	points.append(Vector3(-152.0, 0.05, lane))
+	points.append(Vector3(road_edge, 0.05, lane))
+	points.append(Vector3(road_edge, 0.05, lane + side * 8.0))
+	points.append(Vector3(-road_edge, 0.05, lane + side * 8.0))
+	points.append(Vector3(-road_edge, 0.05, lane))
 	return points
 
 func lead_distance(source: TrafficCar, direction: Vector3) -> float:
