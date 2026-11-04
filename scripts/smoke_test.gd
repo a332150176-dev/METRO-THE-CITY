@@ -100,7 +100,7 @@ func _run_smoke_test() -> void:
 		push_error("Smoke test: player character rig and animation player did not initialize")
 		quit(1)
 		return
-	var player_animations := game.player.character_animation_player.get_animation_list()
+	var player_animations: PackedStringArray = game.player.character_animation_player.get_animation_list()
 	print("METRO player animation clips: ", player_animations)
 	for required_clip in ["Idle_A", "Walking_A", "Running_A"]:
 		if not game.player.character_animation_player.has_animation(required_clip):
