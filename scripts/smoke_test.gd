@@ -42,6 +42,19 @@ func _run_smoke_test() -> void:
 		push_error("Smoke test: traffic or pedestrian population did not initialize")
 		quit(1)
 		return
+	if traffic.vehicle_scenes.size() < 8:
+		push_error("Smoke test: all eight authored vehicle models did not load")
+		quit(1)
+		return
+	var first_car := traffic.cars[0] as TrafficCar
+	if first_car.get_node_or_null("VehicleVisual/AuthoredVehicleModel") == null:
+		push_error("Smoke test: traffic car is not using its authored 3D model")
+		quit(1)
+		return
+	if first_car.wheel_meshes.size() < 4:
+		push_error("Smoke test: authored vehicle wheel meshes were not found")
+		quit(1)
+		return
 	if game.get_node_or_null("GameHUD") == null:
 		push_error("Smoke test: game HUD is missing")
 		quit(1)
@@ -124,5 +137,5 @@ func _run_smoke_test() -> void:
 		quit(1)
 		return
 
-	print("METRO smoke test passed: 7x7 city, eight textured GLB building models, traffic, campaign, vehicles, interactive store, checkout and persistent inventory")
+	print("METRO smoke test passed: 7x7 city, eight textured building models, eight authored vehicles, traffic, campaign, vehicles, interactive store, checkout and persistent inventory")
 	quit(0)
