@@ -10,6 +10,9 @@ var lights: TrafficController
 var cars: Array[TrafficCar] = []
 var pedestrians: Array[CityPedestrian] = []
 var spawn_clock: float = 0.0
+var simulation_clock: float = 0.0
+var player_tracker: Node3D
+var simulation_radius: float = 190.0
 var target_car_count: int = 14
 var vehicle_types: Array[String] = ["sedan", "suv", "van", "taxi"]
 var car_colors: Array[Color] = [
@@ -29,14 +32,41 @@ func configure(road_network: RoadNetwork, controller: TrafficController) -> void
 		_spawn_one_car(i)
 	_spawn_pedestrians(24)
 
+func set_player_tracker(player_node: Node3D) -> void:
+	player_tracker = player_node
+	_refresh_actor_simulation()
+
 func _process(delta: float) -> void:
 	for i in range(cars.size() - 1, -1, -1):
 		if not is_instance_valid(cars[i]) or cars[i].is_queued_for_deletion():
 			cars.remove_at(i)
+	simulation_clock += delta
+	if simulation_clock >= 0.45:
+		simulation_clock = 0.0
+		_refresh_actor_simulation()
 	spawn_clock += delta
 	if cars.size() < target_car_count and spawn_clock >= 3.5:
 		spawn_clock = 0.0
 		_spawn_one_car(rng.randi_range(0, 1000))
+
+func _refresh_actor_simulation() -> void:
+	if player_tracker == null or not is_instance_valid(player_tracker):
+		return
+	var player_position := Vector2(player_tracker.global_position.x, player_tracker.global_position.z)
+	for car in cars:
+		if not is_instance_valid(car) or car.is_queued_for_deletion():
+			continue
+		var car_position := Vector2(car.global_position.x, car.global_position.z)
+		var active := car.player_driving or player_position.distance_to(car_position) <= simulation_radius
+		if car.is_physics_processing() != active:
+			car.set_physics_process(active)
+	for pedestrian in pedestrians:
+		if not is_instance_valid(pedestrian) or pedestrian.is_queued_for_deletion():
+			continue
+		var pedestrian_position := Vector2(pedestrian.global_position.x, pedestrian.global_position.z)
+		var active := player_position.distance_to(pedestrian_position) <= simulation_radius
+		if pedestrian.is_physics_processing() != active:
+			pedestrian.set_physics_process(active)
 
 func _spawn_one_car(seed_value: int) -> void:
 	var intersection_count := network.GRID_SIZE * network.GRID_SIZE
