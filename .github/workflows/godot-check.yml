@@ -7,6 +7,7 @@ on:
       - "project.godot"
       - "scenes/**"
       - "scripts/**"
+      - "assets/**"
       - ".github/workflows/godot-check.yml"
   pull_request:
     branches: [main]
