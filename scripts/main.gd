@@ -9,6 +9,7 @@ const HUD_SCRIPT := preload("res://scripts/game_hud.gd")
 const MISSION_SCRIPT := preload("res://scripts/mission_manager.gd")
 const STORE_SCRIPT := preload("res://scripts/store_system.gd")
 const WANTED_SCRIPT := preload("res://scripts/wanted_system.gd")
+const HUMANOID_FACTORY_SCRIPT := preload("res://scripts/humanoid_factory.gd")
 
 var road_network: RoadNetwork
 var traffic_controller: TrafficController
@@ -19,9 +20,14 @@ var hud: GameHUD
 var mission_manager: MissionManager
 var store_system: StoreSystem
 var wanted_system: WantedSystem
+var humanoid_factory: HumanoidFactory
 
 func _ready() -> void:
 	_ensure_input_actions()
+	humanoid_factory = HUMANOID_FACTORY_SCRIPT.new()
+	humanoid_factory.name = "HumanoidFactory"
+	add_child(humanoid_factory)
+	humanoid_factory.load_assets()
 	_build_environment()
 	road_network = NETWORK_SCRIPT.new()
 
@@ -42,7 +48,7 @@ func _ready() -> void:
 	traffic_manager = TRAFFIC_SCRIPT.new()
 	traffic_manager.name = "CityTraffic"
 	add_child(traffic_manager)
-	traffic_manager.configure(road_network, traffic_controller)
+	traffic_manager.configure(road_network, traffic_controller, humanoid_factory)
 
 	hud = HUD_SCRIPT.new()
 	hud.name = "GameHUD"
@@ -96,7 +102,7 @@ func _start_game(character_id: String) -> void:
 	player = PLAYER_SCRIPT.new()
 	player.name = "Player"
 	add_child(player)
-	player.configure(character_id)
+	player.configure(character_id, humanoid_factory)
 	store_system.configure(player)
 	traffic_manager.set_player_tracker(player)
 	wanted_system = WANTED_SCRIPT.new()
