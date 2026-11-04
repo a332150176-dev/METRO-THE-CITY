@@ -10,7 +10,8 @@ var lights: TrafficController
 var cars: Array[TrafficCar] = []
 var pedestrians: Array[CityPedestrian] = []
 var spawn_clock: float = 0.0
-var target_car_count: int = 12
+var target_car_count: int = 14
+var vehicle_types: Array[String] = ["sedan", "suv", "van", "taxi"]
 var car_colors: Array[Color] = [
 	Color("#24799a"), Color("#c2c6c5"), Color("#b64d3b"),
 	Color("#d4a843"), Color("#343b43"), Color("#6d8a6f")
@@ -45,7 +46,7 @@ func _spawn_one_car(seed_value: int) -> void:
 	var car: TrafficCar = CAR_SCRIPT.new()
 	car.name = "TrafficCar_%02d" % (seed_value % 1000)
 	var lane := 3.0 if seed_value % 2 == 0 else -3.0
-	car.setup(network, lights, start_id, goal_id, car_colors[posmod(seed_value, car_colors.size())], lane, self)
+	car.setup(network, lights, start_id, goal_id, car_colors[posmod(seed_value, car_colors.size())], lane, self, vehicle_types[posmod(seed_value, vehicle_types.size())])
 	add_child(car)
 	cars.append(car)
 
