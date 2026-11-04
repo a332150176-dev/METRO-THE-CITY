@@ -37,12 +37,17 @@ func _run_smoke_test() -> void:
 		quit(1)
 		return
 
-	GameState.set_shirt_color(Color("#b64d3b"))
-	if GameState.custom_shirt_color != "#b64d3b":
+	var game_state := root.get_node_or_null("GameState")
+	if game_state == null:
+		push_error("Smoke test: GameState autoload is missing")
+		quit(1)
+		return
+	game_state.set_shirt_color(Color("#b64d3b"))
+	if game_state.custom_shirt_color != "#b64d3b":
 		push_error("Smoke test: character customization did not persist")
 		quit(1)
 		return
-	GameState.clear_shirt_color()
+	game_state.clear_shirt_color()
 
 	game.hud._start_selected_character()
 	await process_frame
