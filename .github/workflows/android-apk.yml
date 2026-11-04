@@ -9,6 +9,7 @@ on:
       - "scenes/**"
       - "scripts/**"
       - ".github/workflows/android-apk.yml"
+      - ".github/debug.keystore.b64"
   workflow_dispatch:
 
 permissions:
@@ -49,7 +50,9 @@ jobs:
 
       - name: Configure Android debug signing
         run: |
-          keytool -genkeypair -v -keystore "$HOME/debug.keystore" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          # Shared debug key only; never use this key for a production release.
+          base64 --decode .github/debug.keystore.b64 > "$HOME/debug.keystore"
+          chmod 600 "$HOME/debug.keystore"
           mkdir -p "$HOME/.config/godot"
           cat > "$HOME/.config/godot/editor_settings-4.3.tres" <<EOF
           [gd_resource type="EditorSettings" format=3]
