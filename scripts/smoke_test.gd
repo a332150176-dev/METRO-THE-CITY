@@ -42,9 +42,18 @@ func _run_smoke_test() -> void:
 		push_error("Smoke test: five downtown skyscraper models did not load")
 		quit(1)
 		return
+	if game.humanoid_factory == null or not game.humanoid_factory.assets_ready():
+		push_error("Smoke test: the rigged humanoid asset kit did not load")
+		quit(1)
+		return
 	var traffic := game.get_node_or_null("CityTraffic")
 	if traffic == null or traffic.cars.size() < 12 or traffic.pedestrians.size() < 24:
 		push_error("Smoke test: traffic or pedestrian population did not initialize")
+		quit(1)
+		return
+	var first_pedestrian := traffic.pedestrians[0] as CityPedestrian
+	if first_pedestrian.rigged_model == null or first_pedestrian.rigged_animation == null:
+		push_error("Smoke test: pedestrians are not using rigged animated models")
 		quit(1)
 		return
 	if traffic.vehicle_scenes.size() < 8:
@@ -81,6 +90,10 @@ func _run_smoke_test() -> void:
 	await process_frame
 	if game.player == null or game.mission_manager == null:
 		push_error("Smoke test: character selection did not start the campaign")
+		quit(1)
+		return
+	if game.player.character_animation_player == null:
+		push_error("Smoke test: player character rig and animation player did not initialize")
 		quit(1)
 		return
 
@@ -177,5 +190,5 @@ func _run_smoke_test() -> void:
 		quit(1)
 		return
 
-	print("METRO smoke test passed: 9x9 city, eight textured suburban buildings, five textured skyscrapers, eight authored vehicles, police wanted response, traffic, campaign, vehicles, interactive store with 3D products, checkout and persistent inventory")
+	print("METRO smoke test passed: 9x9 city, eight textured suburban buildings, five textured skyscrapers, rigged animated player and pedestrians, eight authored vehicles, police wanted response, traffic, campaign, vehicles, interactive store with 3D products, checkout and persistent inventory")
 	quit(0)
