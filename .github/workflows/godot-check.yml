@@ -30,6 +30,9 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Install curl for visual asset downloader
+        run: apt-get update && apt-get install -y curl
+
       - name: Fetch and prepare higher-detail visual assets
         run: |
           bash tools/fetch_visual_assets.sh
