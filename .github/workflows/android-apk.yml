@@ -33,7 +33,7 @@ jobs:
           packages: "platform-tools"
 
       - name: Install Android SDK packages
-        run: sdkmanager "platform-tools" "build-tools;33.0.2" "platforms;android-33"
+        run: sdkmanager "platform-tools" "build-tools;34.0.0" "platforms;android-34"
 
       - name: Install Godot 4.3 and Android export templates
         run: |
@@ -68,8 +68,8 @@ jobs:
       - name: Export and verify Android debug APK
         run: |
           mkdir -p build
-          export PATH="$ANDROID_HOME/build-tools/33.0.2:$ANDROID_HOME/platform-tools:$PATH"
-          godot --headless --path . --export-debug "Android" build/METRO_THE_CITY_test.apk
+          export PATH="$ANDROID_HOME/build-tools/34.0.0:$ANDROID_HOME/platform-tools:$PATH"
+          godot --headless --verbose --path . --export-debug "Android" build/METRO_THE_CITY_test.apk
           test -s build/METRO_THE_CITY_test.apk
           unzip -t build/METRO_THE_CITY_test.apk
           apksigner verify --verbose build/METRO_THE_CITY_test.apk
