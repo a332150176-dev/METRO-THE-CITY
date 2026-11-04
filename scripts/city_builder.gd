@@ -7,6 +7,7 @@ const GRID_SPACING: float = 76.0
 const ROAD_WIDTH: float = 18.0
 const CITY_EDGE: float = 610.0
 const SUBURBAN_MODEL_LETTERS := ["a", "b", "c", "d", "e", "f", "g", "h"]
+const DOWNTOWN_MODEL_LETTERS := ["a", "b", "c", "d", "e"]
 
 var rng := RandomNumberGenerator.new()
 var traffic_controller: TrafficController
@@ -19,16 +20,21 @@ var crosswalk_z_transforms: Array[Transform3D] = []
 var suburban_meshes: Array[Mesh] = []
 var suburban_materials: Array[Material] = []
 var suburban_transforms: Array = []
+var downtown_meshes: Array[Mesh] = []
+var downtown_materials: Array[Material] = []
+var downtown_transforms: Array = []
 
 func build_city(controller: TrafficController) -> void:
 	traffic_controller = controller
 	rng.seed = 20261104
 	_load_suburban_models()
+	_load_downtown_models()
 	_build_ground()
 	_build_roads()
 	_build_blocks()
 	_build_intersections()
 	_build_suburban_model_batches()
+	_build_downtown_model_batches()
 	_build_batched_details()
 
 func _material(color: Color, roughness: float = 0.88) -> StandardMaterial3D:
@@ -130,11 +136,14 @@ func _build_blocks() -> void:
 					var color: Color = palette[rng.randi_range(0, palette.size() - 1)]
 					var is_minimarket_lot := block_x == int((GRID_SIZE - 2) / 2) and block_z == int((GRID_SIZE - 2) / 2) and is_equal_approx(float(offset_x), -14.0) and is_equal_approx(float(offset_z), -14.0)
 					if not is_minimarket_lot:
-						var use_authored_model := not downtown and (not mixed or rng.randf() > 0.42) and not suburban_meshes.is_empty()
-						if use_authored_model:
-							_queue_suburban_building(position)
+						if downtown and not downtown_meshes.is_empty():
+							_queue_downtown_building(position)
 						else:
-							_add_building(Vector3(width, height, depth), position, color, downtown)
+							var use_authored_model := not downtown and (not mixed or rng.randf() > 0.42) and not suburban_meshes.is_empty()
+							if use_authored_model:
+								_queue_suburban_building(position)
+							else:
+								_add_building(Vector3(width, height, depth), position, color, downtown)
 
 			_add_tree(Vector3(center_x - 25.0, 0.0, center_z))
 			_add_tree(Vector3(center_x + 25.0, 0.0, center_z))
@@ -238,6 +247,80 @@ func _load_suburban_models() -> void:
 		model_scene.free()
 	if suburban_meshes.is_empty():
 		push_warning("No authored suburban building models were loaded; using procedural fallback buildings.")
+
+func _load_downtown_models() -> void:
+	downtown_meshes.clear()
+	downtown_materials.clear()
+	downtown_transforms.clear()
+	for letter_value in DOWNTOWN_MODEL_LETTERS:
+		var letter := str(letter_value)
+		var asset_path := "res://assets/city_models/skyscraper-%s.glb.b64" % letter
+		if not FileAccess.file_exists(asset_path):
+			continue
+		var encoded := FileAccess.get_file_as_string(asset_path).strip_edges()
+		var binary := Marshalls.base64_to_raw(encoded)
+		var document := GLTFDocument.new()
+		var state := GLTFState.new()
+		var parse_error := document.append_from_buffer(binary, "res://assets/city_models/", state, 0)
+		if parse_error != OK:
+			push_warning("Could not load downtown model %s: %s" % [letter, error_string(parse_error)])
+			continue
+		var model_scene := document.generate_scene(state)
+		if model_scene == null:
+			continue
+		var mesh_instance := _find_mesh_instance(model_scene)
+		if mesh_instance == null or mesh_instance.mesh == null:
+			model_scene.free()
+			continue
+		var retained_mesh := mesh_instance.mesh.duplicate(true) as Mesh
+		if retained_mesh == null:
+			model_scene.free()
+			continue
+		downtown_meshes.append(retained_mesh)
+		var source_material := mesh_instance.get_active_material(0)
+		downtown_materials.append(source_material.duplicate() if source_material != null else null)
+		downtown_transforms.append([])
+		model_scene.free()
+	if downtown_meshes.is_empty():
+		push_warning("No authored downtown towers loaded; using procedural fallback high-rises.")
+
+func _queue_downtown_building(position: Vector3) -> void:
+	var model_index := rng.randi_range(0, downtown_meshes.size() - 1)
+	var mesh := downtown_meshes[model_index]
+	var source_height := maxf(0.1, mesh.get_aabb().size.y)
+	var target_height := rng.randf_range(38.0, 56.0)
+	var horizontal_scale := rng.randf_range(10.8, 12.8)
+	var vertical_scale := target_height / source_height
+	var yaw := float(rng.randi_range(0, 3)) * PI * 0.5
+	var basis := Basis(Vector3.UP, yaw).scaled(Vector3(horizontal_scale, vertical_scale, horizontal_scale))
+	downtown_transforms[model_index].append(Transform3D(basis, Vector3(position.x, 0.04, position.z)))
+
+	var body := StaticBody3D.new()
+	body.position = Vector3(position.x, target_height * 0.5, position.z)
+	add_child(body)
+	var collision := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(horizontal_scale * 1.3, target_height, horizontal_scale * 1.3)
+	collision.shape = shape
+	body.add_child(collision)
+
+func _build_downtown_model_batches() -> void:
+	for model_index in range(downtown_meshes.size()):
+		var transforms: Array = downtown_transforms[model_index]
+		if transforms.is_empty():
+			continue
+		var multi := MultiMesh.new()
+		multi.transform_format = MultiMesh.TRANSFORM_3D
+		multi.mesh = downtown_meshes[model_index]
+		multi.instance_count = transforms.size()
+		for index in range(transforms.size()):
+			multi.set_instance_transform(index, transforms[index])
+		var instance := MultiMeshInstance3D.new()
+		instance.multimesh = multi
+		if downtown_materials[model_index] != null:
+			instance.material_override = downtown_materials[model_index]
+		instance.custom_aabb = AABB(Vector3(-CITY_EDGE * 0.5, -1.0, -CITY_EDGE * 0.5), Vector3(CITY_EDGE, 90.0, CITY_EDGE))
+		add_child(instance)
 
 func _find_mesh_instance(node: Node) -> MeshInstance3D:
 	if node is MeshInstance3D:
