@@ -1,7 +1,9 @@
 extends CharacterBody3D
 class_name TrafficCar
 
-const BODY_LENGTH: float = 4.2
+var body_length: float = 4.2
+var body_width: float = 1.85
+var vehicle_type: String = "sedan"
 
 var route_network: RoadNetwork
 var lights: TrafficController
@@ -19,12 +21,14 @@ var driver: PlayerController
 var driving_joystick: TouchJoystick
 var vehicle_camera: Camera3D
 
-func setup(network: RoadNetwork, controller: TrafficController, start_id: int, goal_id: int, color: Color, lane: float = 3.1, manager: TrafficManager = null) -> void:
+func setup(network: RoadNetwork, controller: TrafficController, start_id: int, goal_id: int, color: Color, lane: float = 3.1, manager: TrafficManager = null, type: String = "sedan") -> void:
 	route_network = network
 	lights = controller
 	traffic_manager = manager
 	route_goal_id = goal_id
 	paint_color = color
+	vehicle_type = type
+	_match_vehicle_dimensions()
 	route = network.build_route(start_id, goal_id, lane)
 	if route.size() > 0:
 		position = route[0]
@@ -34,12 +38,28 @@ func _ready() -> void:
 	if get_node_or_null("VehicleVisual") == null:
 		_build_vehicle()
 
+func _match_vehicle_dimensions() -> void:
+	match vehicle_type:
+		"van":
+			body_length = 4.9
+			body_width = 1.95
+		"suv":
+			body_length = 4.55
+			body_width = 1.95
+		"taxi":
+			body_length = 4.25
+			body_width = 1.85
+		_:
+			vehicle_type = "sedan"
+			body_length = 4.2
+			body_width = 1.85
+
 func _build_vehicle() -> void:
 	if get_node_or_null("VehicleVisual") != null:
 		return
 	var collider := CollisionShape3D.new()
 	var box_shape := BoxShape3D.new()
-	box_shape.size = Vector3(1.85, 1.25, BODY_LENGTH)
+	box_shape.size = Vector3(body_width, 1.5 if vehicle_type == "van" else 1.25, body_length)
 	collider.shape = box_shape
 	collider.position.y = 0.68
 	add_child(collider)
@@ -47,9 +67,14 @@ func _build_vehicle() -> void:
 	var visual := Node3D.new()
 	visual.name = "VehicleVisual"
 	add_child(visual)
-	_add_box(visual, Vector3(1.85, 0.78, BODY_LENGTH), Vector3(0.0, 0.58, 0.0), paint_color)
-	_add_box(visual, Vector3(1.48, 0.68, 2.0), Vector3(0.0, 1.22, -0.18), Color("#273946"))
-	_add_box(visual, Vector3(1.5, 0.12, 0.62), Vector3(0.0, 0.94, -1.55), Color("#d7d9d4"))
+	_add_box(visual, Vector3(body_width, 0.82, body_length), Vector3(0.0, 0.62, 0.0), paint_color)
+	var cabin_length := 2.65 if vehicle_type == "van" else (2.25 if vehicle_type == "suv" else 2.0)
+	var cabin_height := 0.92 if vehicle_type == "van" else (0.78 if vehicle_type == "suv" else 0.68)
+	var cabin_width := body_width * (0.84 if vehicle_type == "van" else 0.80)
+	_add_box(visual, Vector3(cabin_width, cabin_height, cabin_length), Vector3(0.0, 1.34 if vehicle_type == "van" else 1.22, -0.12), Color("#273946"))
+	_add_box(visual, Vector3(body_width * 0.82, 0.12, 0.62), Vector3(0.0, 0.98, -body_length * 0.36), Color("#d7d9d4"))
+	if vehicle_type == "taxi":
+		_add_box(visual, Vector3(0.48, 0.16, 0.3), Vector3(0.0, 1.72, -0.12), Color("#f2c94c"))
 	for side in [-1.0, 1.0]:
 		for axle in [-1.25, 1.25]:
 			var wheel := MeshInstance3D.new()
@@ -59,7 +84,7 @@ func _build_vehicle() -> void:
 			cylinder.height = 0.2
 			wheel.mesh = cylinder
 			wheel.rotation_degrees.z = 90.0
-			wheel.position = Vector3(side * 0.94, 0.38, axle)
+			wheel.position = Vector3(side * (body_width * 0.51), 0.38, axle * (body_length / 4.2))
 			var tire := StandardMaterial3D.new()
 			tire.albedo_color = Color("#171a1d")
 			wheel.material_override = tire
