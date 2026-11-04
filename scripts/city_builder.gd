@@ -226,9 +226,14 @@ func _load_suburban_models() -> void:
 		if mesh_instance == null or mesh_instance.mesh == null:
 			model_scene.free()
 			continue
-		suburban_meshes.append(mesh_instance.mesh)
+		var retained_mesh := mesh_instance.mesh.duplicate(true) as Mesh
+		if retained_mesh == null:
+			model_scene.free()
+			continue
+		suburban_meshes.append(retained_mesh)
 		var source_material := mesh_instance.get_active_material(0)
-		suburban_materials.append(source_material)
+		var retained_material: Material = source_material.duplicate() if source_material != null else null
+		suburban_materials.append(retained_material)
 		suburban_transforms.append([])
 		model_scene.free()
 	if suburban_meshes.is_empty():
