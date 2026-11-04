@@ -20,7 +20,7 @@
 
 The first APK was deliberately a compatibility and gameplay test. It demonstrated that the Android export installs and runs on the M36 Plus. It is not the intended visual quality bar.
 
-The current project uses Godot 4.3 Compatibility renderer. The first city uses procedural primitive geometry; the next development phase replaces the tiny test layout with a larger district-based layout and improved building façades.
+The current project uses Godot 4.3 Compatibility renderer. The city road graph now uses a 7×7 intersection grid (49 intersections) with six blocks in each direction. One commercial lot is reserved for an enterable minimarket with shelves, product selection, checkout and saved inventory. Distant cars and pedestrians are paused outside a 190 m player radius; interior visits pause city traffic and hide the minimap.
 
 ## Performance rules
 
@@ -41,7 +41,7 @@ The current project uses Godot 4.3 Compatibility renderer. The first city uses p
 ### Phase 2 — Make the open world playable
 - Add multiple enterable vehicle classes and vehicle interaction feedback.
 - Add free-roam activities, discoverable locations and optional tasks.
-- Add selected enterable interiors and transitions.
+- Add selected enterable interiors and transitions. (Initial minimarket interior and purchase loop are implemented.)
 
 ### Phase 3 — Systems
 - Build a police response and wanted-level system.
